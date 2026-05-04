@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { ArrowRight, CheckCircle2, MonitorPlay, FileText, DownloadCloud, Palette, Share2, SaveAll } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MonitorPlay, FileText, DownloadCloud, Palette, Share2, SaveAll, Zap } from 'lucide-react';
 import clsx from 'clsx';
 import { templates } from '../data/templates';
 
