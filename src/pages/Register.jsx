@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Zap, Eye, EyeOff, AlertCircle, Loader2, Check, X } from 'lucide-react';
+import { Zap, Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -10,8 +11,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [shake, setShake] = useState(false);
+  const { showToast } = useToast();
   const [passwordMismatch, setPasswordMismatch] = useState(false);
   
   const { signUp, signInWithGoogle, user } = useAuth();
@@ -68,14 +68,11 @@ export default function Register() {
     }
     
     setLoading(true);
-    setError(null);
     try {
       await signUp(name, email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to create account.');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+      showToast(err.message || 'Failed to create account.', 'error');
     } finally {
       setLoading(false);
     }
@@ -83,14 +80,11 @@ export default function Register() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    setError(null);
     try {
       await signInWithGoogle();
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Google sign in failed');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+      showToast(err.message || 'Google sign in failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -114,12 +108,7 @@ export default function Register() {
             <p className="text-[15px] font-sans text-text-muted">Start creating beautiful documents today.</p>
           </div>
 
-          {error && (
-            <div className={`mb-6 p-4 rounded-lg bg-danger/10 border border-danger/30 flex items-start gap-3 ${shake ? 'animate-shake' : ''}`}>
-              <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
-              <p className="text-[14px] text-danger font-sans">{error}</p>
-            </div>
-          )}
+
 
           <button 
             onClick={handleGoogleSignIn}

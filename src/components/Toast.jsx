@@ -1,50 +1,77 @@
-import { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
-import clsx from 'clsx';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
-export default function Toast({ type = 'info', message, onClose, duration = 3000 }) {
-  const [isVisible, setIsVisible] = useState(false);
+const ToastContext = createContext();
 
-  useEffect(() => {
-    // Small delay to allow CSS animation to trigger on mount
-    const mountTimer = setTimeout(() => setIsVisible(true), 10);
-    
-    const hideTimer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300); // wait for fade out before unmounting
-    }, duration);
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
+}
 
-    return () => {
-      clearTimeout(mountTimer);
-      clearTimeout(hideTimer);
-    };
-  }, [duration, onClose]);
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
 
+  const showToast = useCallback((message, type = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+
+    setTimeout(() => {
+      removeToast(id);
+    }, 3000);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.map(t => t.id === id ? { ...t, isLeaving: true } : t));
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 200); // Wait for exit animation
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
+        {toasts.map((toast) => (
+          <Toast 
+            key={toast.id} 
+            {...toast} 
+            onClose={() => removeToast(toast.id)} 
+          />
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+function Toast({ message, type, isLeaving, onClose }) {
   const icons = {
-    success: <CheckCircle2 className="w-5 h-5 text-success" />,
-    error: <XCircle className="w-5 h-5 text-danger" />,
-    info: <Info className="w-5 h-5 text-accent" />
+    success: <CheckCircle2 className="w-4 h-4 text-success" />,
+    error: <AlertCircle className="w-4 h-4 text-danger" />,
+    info: <Info className="w-4 h-4 text-accent" />
   };
 
-  const borders = {
-    success: 'border-success/30',
-    error: 'border-danger/30',
-    info: 'border-accent/30'
+  const borderColors = {
+    success: 'border-l-success',
+    error: 'border-l-danger',
+    info: 'border-l-accent'
   };
 
   return (
-    <div className={clsx(
-      'fixed bottom-6 right-6 z-50 flex items-center gap-3 p-4 rounded-xl bg-bg-card shadow-2xl border transition-all duration-300',
-      borders[type],
-      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-    )}>
-      {icons[type]}
-      <p className="text-sm font-medium text-text-primary pr-4">{message}</p>
+    <div 
+      className={`pointer-events-auto flex items-center justify-between gap-3 min-w-[280px] p-4 rounded-lg bg-[#1a1a1a] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#333] border-l-[4px] ${borderColors[type]} ${isLeaving ? 'animate-toast-out' : 'animate-toast-in'}`}
+    >
+      <div className="flex items-center gap-3">
+        {icons[type]}
+        <span className="text-[14px] font-sans text-white">{message}</span>
+      </div>
       <button 
-        onClick={() => { setIsVisible(false); setTimeout(onClose, 300); }}
-        className="text-text-muted hover:text-text-primary transition-colors"
+        onClick={onClose}
+        className="p-1 text-[#888] hover:text-white rounded-full transition-colors"
       >
-        <X className="w-4 h-4" />
+        <X className="w-3.5 h-3.5" />
       </button>
     </div>
   );

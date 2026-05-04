@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getDocument, updateDocument, createShareSlug } from '../lib/firestore';
 import { templates } from '../data/templates';
-import Toast from '../components/Toast';
+import { useToast } from '../components/Toast';
 import { marked } from 'marked';
 import html2pdf from 'html2pdf.js';
 
@@ -64,7 +64,7 @@ export default function Editor() {
   
   const [saveStatus, setSaveStatus] = useState('Saved ✓'); // 'Saved ✓', 'Saving...', 'Unsaved changes'
   const [exporting, setExporting] = useState(false);
-  const [toast, setToast] = useState(null);
+  const { showToast } = useToast();
   const [versions, setVersions] = useState([]);
   
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
@@ -101,7 +101,7 @@ export default function Editor() {
         setSelectedTemplate(data.templateId || 'blank');
         setVersions(data.versions || []);
       } catch (err) {
-        setToast({ type: 'error', message: 'Failed to load document' });
+        showToast('Failed to load document', 'error');
         navigate('/dashboard');
       } finally {
         setLoading(false);
@@ -197,7 +197,7 @@ export default function Editor() {
       setSaveStatus('Saved ✓');
     } catch (err) {
       setSaveStatus('Unsaved changes');
-      setToast({ type: 'error', message: 'Autosave failed' });
+      showToast('Autosave failed', 'error');
     }
   };
 
@@ -303,15 +303,15 @@ export default function Editor() {
       }
       const url = `${window.location.origin}/share/${slug}`;
       await navigator.clipboard.writeText(url);
-      setToast({ type: 'success', message: 'Link copied to clipboard!' });
+      showToast('Link copied to clipboard!', 'success');
     } catch (err) {
-      setToast({ type: 'error', message: 'Failed to create share link' });
+      showToast('Failed to create share link', 'error');
     }
   };
 
   const handleCopyMarkdown = () => {
     navigator.clipboard.writeText(content);
-    setToast({ type: 'success', message: 'Markdown copied to clipboard!' });
+    showToast('Markdown copied to clipboard!', 'success');
   };
 
   const handleExportPDF = () => {
@@ -355,10 +355,10 @@ export default function Editor() {
 
     html2pdf().set(opt).from(clone).save().then(() => {
       setExporting(false);
-      setToast({ type: 'success', message: 'PDF Exported Successfully' });
+      showToast('PDF Exported Successfully', 'success');
     }).catch(() => {
       setExporting(false);
-      setToast({ type: 'error', message: 'Export failed' });
+      showToast('Export failed', 'error');
     });
   };
 
@@ -636,7 +636,7 @@ export default function Editor() {
         )}
       </div>
 
-      {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
+
 
       <style dangerouslySetInnerHTML={{__html: `
         .transition-250 { transition-duration: 250ms; }

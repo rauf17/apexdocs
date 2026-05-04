@@ -1,17 +1,21 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import LoadingBar from './LoadingBar';
+import { Loader2 } from 'lucide-react';
 
-export default function ProtectedRoute() {
+export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-primary">
-        <LoadingBar />
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
       </div>
     );
   }
 
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children || <Outlet />;
 }

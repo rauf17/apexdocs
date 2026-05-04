@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import DocumentCard from '../components/DocumentCard';
 import SkeletonCard from '../components/SkeletonCard';
-import Toast from '../components/Toast';
+import { useToast } from '../components/Toast';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -18,7 +18,7 @@ export default function Dashboard() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [toast, setToast] = useState(null);
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('All Documents');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
@@ -47,7 +47,7 @@ export default function Dashboard() {
       const docId = await createDocument(user.uid, '', 'blank');
       navigate(`/editor/${docId}`);
     } catch (err) {
-      setToast({ type: 'error', message: 'Failed to create document' });
+      showToast('Failed to create document', 'error');
     }
   };
 
@@ -62,7 +62,7 @@ export default function Dashboard() {
       await toggleStar(docId, isStarred);
     } catch (err) {
       setDocuments(docs => docs.map(d => d.id === docId ? { ...d, isStarred } : d)); // Revert
-      setToast({ type: 'error', message: 'Failed to update star' });
+      showToast('Failed to update star', 'error');
     }
   };
 
@@ -74,10 +74,10 @@ export default function Dashboard() {
     setDocToDelete(null);
     try {
       await deleteDocument(id);
-      setToast({ type: 'success', message: 'Document deleted' });
+      showToast('Document deleted', 'success');
     } catch (err) {
       setDocuments(docs => [docToRestore, ...docs]); // Revert
-      setToast({ type: 'error', message: 'Failed to delete document' });
+      showToast('Failed to delete document', 'error');
     }
   };
 
@@ -96,10 +96,10 @@ export default function Dashboard() {
     try {
       const newId = await createDocument(user.uid, doc.content, newName);
       setDocuments(docs => docs.map(d => d.id === tempDoc.id ? { ...d, id: newId } : d));
-      setToast({ type: 'success', message: 'Document duplicated' });
+      showToast('Document duplicated', 'success');
     } catch (err) {
       setDocuments(docs => docs.filter(d => d.id !== tempDoc.id)); // Revert
-      setToast({ type: 'error', message: 'Failed to duplicate document' });
+      showToast('Failed to duplicate document', 'error');
     }
   };
 
@@ -339,7 +339,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
+
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes sidebar-slide {

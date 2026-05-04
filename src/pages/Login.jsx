@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Zap, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Zap, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [shake, setShake] = useState(false);
+  const { showToast } = useToast();
   
   const { signIn, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
@@ -23,14 +23,11 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+      showToast(err.message || 'Failed to sign in. Please check your credentials.', 'error');
     } finally {
       setLoading(false);
     }
@@ -38,14 +35,11 @@ export default function Login() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    setError(null);
     try {
       await signInWithGoogle();
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Google sign in failed');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+      showToast(err.message || 'Google sign in failed', 'error');
     } finally {
       setLoading(false);
     }

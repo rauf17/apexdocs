@@ -1,121 +1,114 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getDocumentBySlug } from '../lib/firestore';
-import { Zap, Download } from 'lucide-react';
+import { Zap, Loader2, FileText, ArrowRight } from 'lucide-react';
 import { marked } from 'marked';
-import html2pdf from 'html2pdf.js';
-import LoadingBar from '../components/LoadingBar';
 
 export default function SharedDoc() {
   const { slug } = useParams();
   const [doc, setDoc] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function fetchDoc() {
+    async function loadDoc() {
       try {
         const data = await getDocumentBySlug(slug);
-        if (data) {
-          setDoc(data);
-        } else {
-          setError('Document not found or link is invalid.');
-        }
+        setDoc(data);
       } catch (err) {
-        setError('Failed to load document.');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     }
-    fetchDoc();
+    loadDoc();
   }, [slug]);
 
-  const handleExport = () => {
-    if (!doc) return;
-    setExporting(true);
-    
-    const element = document.createElement('div');
-    element.innerHTML = marked.parse(doc.content || '');
-    element.style.padding = '40px';
-    element.style.color = '#000';
-    element.style.backgroundColor = '#fff';
-    element.style.fontFamily = 'Geist, sans-serif';
-    
-    const style = document.createElement('style');
-    style.innerHTML = `
-      h1, h2, h3, h4, h5, h6 { font-family: 'Instrument Serif', serif; margin-top: 1.5em; margin-bottom: 0.5em; color: #111; }
-      h1 { font-size: 2.5em; border-bottom: 2px solid #eee; padding-bottom: 0.3em; }
-      p { margin-bottom: 1em; line-height: 1.6; }
-      ul, ol { margin-bottom: 1em; padding-left: 2em; }
-      li { margin-bottom: 0.5em; }
-      code { font-family: 'DM Mono', monospace; background: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
-      pre { background: #f5f5f5; padding: 1em; border-radius: 5px; overflow-x: auto; margin-bottom: 1em; }
-      pre code { background: none; padding: 0; }
-      blockquote { border-left: 4px solid #ddd; padding-left: 1em; color: #666; margin: 1em 0; font-style: italic; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background-color: #f9f9f9; }
-      img { max-width: 100%; height: auto; border-radius: 5px; }
-      hr { border: 0; border-top: 1px solid #eee; margin: 2em 0; }
-    `;
-    element.prepend(style);
-
-    const opt = {
-      margin:       10,
-      filename:     `${(doc.name || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-      setExporting(false);
-    }).catch(() => {
-      setExporting(false);
-    });
-  };
-
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-bg-primary"><LoadingBar /></div>;
+    return (
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-accent animate-spin" />
+      </div>
+    );
   }
 
-  if (error || !doc) {
+  if (!doc) {
     return (
-      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="font-serif text-4xl text-text-primary mb-4">Oops!</h1>
-        <p className="text-text-secondary mb-8">{error}</p>
-        <Link to="/" className="text-accent hover:text-accent-hover font-medium">Return to Home</Link>
+      <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center p-6 text-center page-enter">
+        <span className="text-[64px] mb-6">📄</span>
+        <h1 className="font-serif text-[32px] text-white mb-2">Document not found</h1>
+        <p className="font-sans text-[#888] mb-8 max-w-md">This link may have expired or the document was deleted by the owner.</p>
+        <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium transition-colors">
+          Go to ApexDocs <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary flex flex-col">
-      <nav className="h-20 border-b border-border bg-bg-primary/90 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/20">
-            <Zap className="w-4 h-4 text-accent" />
-          </div>
-          <span className="font-serif text-xl tracking-tight text-text-primary">ApexDocs</span>
+    <div className="min-h-screen bg-[#080808] flex flex-col font-sans page-enter">
+      
+      {/* MINIMAL TOP BAR */}
+      <header className="h-16 fixed top-0 left-0 right-0 bg-[#080808]/80 backdrop-blur-md border-b border-[#222] z-50 flex items-center justify-between px-6">
+        <Link to="/" className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-accent" />
+          <span className="font-serif text-lg tracking-tight text-white">ApexDocs</span>
         </Link>
-        <button 
-          onClick={handleExport}
-          disabled={exporting}
-          className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-accent/20 disabled:opacity-50"
-        >
-          <Download className="w-4 h-4" /> {exporting ? 'Exporting...' : 'Export PDF'}
-        </button>
-      </nav>
+        <Link to="/register" className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-[13px] font-medium rounded-lg transition-colors">
+          Open in ApexDocs
+        </Link>
+      </header>
 
-      <main className="flex-1 p-6 md:p-12 flex justify-center bg-bg-secondary">
-        <div className="bg-white text-black p-10 md:p-16 rounded shadow-2xl w-full max-w-[800px] min-h-[1130px]">
+      {/* DOCUMENT CONTENT */}
+      <main className="flex-1 pt-32 pb-16 px-4 md:px-8">
+        <div className="max-w-[760px] mx-auto bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-10 md:p-[60px] md:px-[60px] px-8 animate-slide-up">
+          <h1 className="font-serif text-[36px] text-[#111] mb-6 leading-tight">
+            {doc.name || 'Untitled Document'}
+          </h1>
+          <hr className="border-t-2 border-[#eee] mb-10" />
+          
           <div 
-            className="prose prose-sm md:prose-base max-w-none prose-h1:font-serif prose-h2:font-serif prose-h3:font-serif prose-headings:text-black prose-p:text-gray-800 prose-a:text-indigo-600 prose-code:font-mono prose-code:bg-gray-100 prose-code:text-gray-800 prose-pre:bg-gray-50 prose-pre:text-gray-800 prose-pre:border prose-pre:border-gray-200 prose-blockquote:border-l-indigo-500 prose-blockquote:text-gray-600"
+            className="prose max-w-none preview-markdown"
+            style={{ '--theme-heading': '#111', '--theme-link': '#6366f1' }}
             dangerouslySetInnerHTML={{ __html: marked.parse(doc.content || '') }}
           />
         </div>
       </main>
+
+      {/* FOOTER STRIP */}
+      <footer className="py-8 text-center border-t border-[#222] bg-[#111111] shrink-0">
+        <p className="text-[13px] text-[#888]">
+          Made with ApexDocs &middot; <Link to="/register" className="text-accent hover:underline">Create your free account &rarr;</Link>
+        </p>
+      </footer>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Modal Markdown (Light theme) */
+        .preview-markdown h1 { font-family: 'Instrument Serif', serif; font-size: 32px; color: var(--theme-heading); margin-bottom: 0.5em; line-height: 1.2; font-weight: normal; }
+        .preview-markdown h2 { font-family: 'Instrument Serif', serif; font-size: 24px; color: var(--theme-heading); margin-top: 1.5em; margin-bottom: 0.5em; font-weight: normal; }
+        .preview-markdown h3 { font-family: 'Geist', sans-serif; font-size: 18px; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; color: #111; }
+        .preview-markdown p { font-family: 'Geist', sans-serif; font-size: 16px; line-height: 1.8; margin-bottom: 1em; color: #333; }
+        .preview-markdown code { font-family: 'DM Mono', monospace; font-size: 13px; color: #22c55e; background: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; }
+        .preview-markdown pre { background: #f5f5f5; padding: 16px; border-radius: 8px; overflow-x: auto; margin-bottom: 1em; border: 1px solid #eee; }
+        .preview-markdown pre code { background: transparent; padding: 0; color: #111; }
+        .preview-markdown blockquote { border-left: 3px solid #6366f1; padding-left: 1em; margin: 1em 0; font-style: italic; color: #666; }
+        .preview-markdown table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+        .preview-markdown th, .preview-markdown td { border: 1px solid #ddd; padding: 8px; text-align: left; color: #111; }
+        .preview-markdown th { background-color: rgba(0,0,0,0.05); }
+        .preview-markdown a { color: var(--theme-link); text-decoration: none; }
+        .preview-markdown a:hover { text-decoration: underline; }
+        .preview-markdown hr { border: 0; border-top: 1px solid #ddd; margin: 2em 0; }
+        .preview-markdown ul, .preview-markdown ol { padding-left: 1.5em; margin-bottom: 1em; color: #333; }
+        .preview-markdown li { margin-bottom: 0.5em; line-height: 1.8; }
+        
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+          opacity: 0;
+          animation: slide-up 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}} />
     </div>
   );
 }
