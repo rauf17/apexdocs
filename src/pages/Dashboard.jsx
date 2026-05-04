@@ -28,11 +28,18 @@ export default function Dashboard() {
   // Fetch Documents
   useEffect(() => {
     async function fetchDocs() {
-      if (!user) return;
+      if (!user?.uid) {
+        setLoading(false);
+        return;
+      }
       try {
+        setLoading(true);
+        console.log("[DEBUG] Fetching documents for user:", user.uid);
         const docs = await getDocuments(user.uid);
+        console.log("[DEBUG] Fetched documents:", docs);
         setDocuments(docs);
       } catch (err) {
+        console.error("[DEBUG] Fetch docs error:", err);
         setError('Failed to load documents');
       } finally {
         setLoading(false);

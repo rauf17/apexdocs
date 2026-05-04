@@ -34,19 +34,29 @@ export const createDocument = async (userId, templateContent, templateName) => {
 
 // getDocuments(userId) -> fetches all docs where userId matches, ordered by updatedAt desc
 export const getDocuments = async (userId) => {
+  console.log("[DEBUG] getDocuments called with userId:", userId);
   try {
     const q = query(
       collection(db, "documents"),
-      where("userId", "==", userId),
-      orderBy("updatedAt", "desc")
+      where("userId", "==", userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    console.log("[DEBUG] getDocuments querySnapshot size:", querySnapshot.size);
+    const docs = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    // Sort on client side to avoid requiring a composite index in Firestore
+    docs.sort((a, b) => {
+      const timeA = a.updatedAt?.toDate()?.getTime() || 0;
+      const timeB = b.updatedAt?.toDate()?.getTime() || 0;
+      return timeB - timeA;
+    });
+
+    console.log("[DEBUG] getDocuments mapped docs:", docs);
+    return docs;
   } catch (error) {
-    console.error("Error fetching documents:", error);
+    console.error("[DEBUG] Error fetching documents:", error);
     throw error;
   }
 };
