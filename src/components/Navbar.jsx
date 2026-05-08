@@ -8,7 +8,7 @@ import clsx from 'clsx';
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, logOut } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function Navbar() {
                   Dashboard
                 </Link>
                 <button 
-                  onClick={signOut}
+                  onClick={logOut}
                   className="text-sm font-medium text-text-muted hover:text-danger transition-colors"
                 >
                   Sign Out
@@ -81,7 +81,7 @@ export default function Navbar() {
             <>
               <Link to="/dashboard" className="text-base font-medium text-text-primary" onClick={closeMenu}>Dashboard</Link>
               <button 
-                onClick={() => { signOut(); closeMenu(); }}
+                onClick={() => { logOut(); closeMenu(); }}
                 className="text-base font-medium text-danger text-left"
               >
                 Sign Out

@@ -1,41 +1,41 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import Logo from '../components/Logo';
-import { useToast } from '../components/Toast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { showToast } = useToast();
+  const [error, setError] = useState('');
   
   const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
     try {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (err) {
-      showToast(err.message || 'Failed to sign in. Please check your credentials.', 'error');
+      setError('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    setError('');
     setLoading(true);
     try {
       await signInWithGoogle();
       navigate('/dashboard');
     } catch (err) {
-      showToast(err.message || 'Google sign in failed', 'error');
+      setError('Google sign in failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -83,8 +83,12 @@ export default function Login() {
             <p className="text-[15px] font-sans text-text-muted">Sign in to continue to ApexDocs</p>
           </div>
 
-
-
+          {error && (
+            <div className="mb-6 p-4 rounded-lg bg-danger/10 border border-danger/30 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
+              <p className="text-[14px] text-danger font-sans">{error}</p>
+            </div>
+          )}
           <button 
             onClick={handleGoogleSignIn}
             disabled={loading}

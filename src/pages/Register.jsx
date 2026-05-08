@@ -14,7 +14,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
   const [passwordMismatch, setPasswordMismatch] = useState(false);
-  
+
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -25,13 +25,13 @@ export default function Register() {
     uppercase: /[A-Z]/.test(password),
     number: /[0-9]/.test(password),
   };
-  
+
   const score = Object.values(criteria).filter(Boolean).length;
-  
+
   let strengthColor = '#222';
   let strengthWidth = '0%';
   let strengthLabel = '';
-  
+
   if (password.length > 0) {
     if (score === 3) {
       strengthColor = '#22c55e'; // Strong
@@ -62,7 +62,7 @@ export default function Register() {
       setPasswordMismatch(true);
       return;
     }
-    
+
     setLoading(true);
     try {
       await signUp(name, email, password);
@@ -75,20 +75,17 @@ export default function Register() {
   };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
     try {
-      await signInWithGoogle();
-      navigate('/dashboard');
+      await signInWithGoogle()
+      navigate("/dashboard")
     } catch (err) {
-      showToast(err.message || 'Google sign in failed', 'error');
-    } finally {
-      setLoading(false);
+      showToast(err.message);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#080808] font-sans page-root">
-      
+
       {/* LEFT PANEL - FORM (Mirrored from Login) */}
       <div className="flex-1 flex flex-col justify-center px-6 md:px-12 py-12 bg-[#080808] order-2 md:order-1 relative z-10">
         <Logo theme="dark" className="md:hidden mb-12 self-start" />
@@ -99,9 +96,13 @@ export default function Register() {
             <p className="text-[15px] font-sans text-text-muted">Start creating beautiful documents today.</p>
           </div>
 
-
-
-          <button 
+          {error && (
+            <div className="mb-6 p-4 rounded-lg bg-danger/10 border border-danger/30 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
+              <p className="text-[14px] text-danger font-sans">{error}</p>
+            </div>
+          )}
+          <button
             onClick={handleGoogleSignIn}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-[#161616] border border-[#222] rounded-lg text-[15px] font-medium text-text-primary hover:bg-[#1a1a1a] hover:border-[#333] transition-all disabled:opacity-50"
@@ -124,8 +125,8 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
               <label className="block font-mono text-[12px] text-text-muted uppercase tracking-wider mb-2">Full Name</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={loading}
@@ -137,8 +138,8 @@ export default function Register() {
 
             <div>
               <label className="block font-mono text-[12px] text-text-muted uppercase tracking-wider mb-2">Email address</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -151,8 +152,8 @@ export default function Register() {
             <div>
               <label className="block font-mono text-[12px] text-text-muted uppercase tracking-wider mb-2">Password</label>
               <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} 
+                <input
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
@@ -173,7 +174,7 @@ export default function Register() {
               {/* Password Strength Indicator */}
               <div className="mt-3">
                 <div className="w-full h-[3px] bg-[#222] rounded-full overflow-hidden mb-1.5">
-                  <div 
+                  <div
                     className="h-full transition-all duration-300 ease-out"
                     style={{ width: strengthWidth, backgroundColor: strengthColor }}
                   ></div>
@@ -183,7 +184,7 @@ export default function Register() {
                     {strengthLabel}
                   </div>
                 )}
-                
+
                 <div className="flex flex-col gap-1 mt-3">
                   <div className="flex items-center gap-2 text-[12px] font-sans">
                     {criteria.length ? <Check className="w-3.5 h-3.5 text-success transition-all duration-200" /> : <X className="w-3.5 h-3.5 text-text-muted transition-all duration-200" />}
@@ -203,8 +204,8 @@ export default function Register() {
 
             <div>
               <label className="block font-mono text-[12px] text-text-muted uppercase tracking-wider mb-2">Confirm Password</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword(e.target.value);
@@ -221,8 +222,8 @@ export default function Register() {
               )}
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading || passwordMismatch}
               className="group relative w-full overflow-hidden rounded-lg bg-gradient-to-br from-[#6366f1] to-[#4f46e5] py-[14px] text-[15px] font-bold text-white transition-all hover:shadow-[0_0_20px_var(--accent-glow)] disabled:opacity-70 mt-2"
             >
@@ -279,7 +280,8 @@ export default function Register() {
         </p>
       </div>
 
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes shimmer {
           100% { transform: translateX(100%); }
         }

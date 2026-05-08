@@ -11,7 +11,7 @@ import SkeletonCard from '../components/SkeletonCard';
 import { useToast } from '../components/Toast';
 
 export default function Dashboard() {
-  const { user, signOut } = useAuth();
+  const { user, logOut } = useAuth();
   const navigate = useNavigate();
 
   // State
@@ -59,7 +59,7 @@ export default function Dashboard() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    await logOut();
     navigate('/');
   };
 
