@@ -1,75 +1,64 @@
-import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './hooks/useAuth';
+import React, { Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './components/Toast';
-import { LoadingProvider, useLoading } from './components/LoadingBar';
-import ProtectedRoute from './components/ProtectedRoute';
 
-// Lazy loaded pages
-const Landing = React.lazy(() => import('./pages/Landing'));
-const Login = React.lazy(() => import('./pages/Login'));
-const Register = React.lazy(() => import('./pages/Register'));
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const Editor = React.lazy(() => import('./pages/Editor'));
-const Templates = React.lazy(() => import('./pages/Templates'));
-const SharedDoc = React.lazy(() => import('./pages/SharedDoc'));
-const NotFound = React.lazy(() => import('./pages/NotFound'));
+// Lazy-loaded pages
+const Landing    = React.lazy(() => import('./pages/Landing'));
+const Login      = React.lazy(() => import('./pages/Login'));
+const Register   = React.lazy(() => import('./pages/Register'));
+const Dashboard  = React.lazy(() => import('./pages/Dashboard'));
+const Editor     = React.lazy(() => import('./pages/Editor'));
+const Templates  = React.lazy(() => import('./pages/Templates'));
+const SharedDoc  = React.lazy(() => import('./pages/SharedDoc'));
+const Pricing    = React.lazy(() => import('./pages/Pricing'));
+const NotFound   = React.lazy(() => import('./pages/NotFound'));
 
-function RouteTracker({ children }) {
-  const location = useLocation();
-  const { startLoading, stopLoading } = useLoading();
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    startLoading();
-    const timer = setTimeout(() => {
-      stopLoading();
-    }, 400); // Simulate network load for lazy components
-    return () => clearTimeout(timer);
-  }, [location, startLoading, stopLoading]);
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#0c0a08' }}>
+        <div style={{
+          width: 36,
+          height: 36,
+          border: '3px solid #3a3328',
+          borderTopColor: '#d4a843',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite'
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return children;
 }
 
 export default function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <ToastProvider>
-          <LoadingProvider>
-            <RouteTracker>
-              <Suspense fallback={null}>
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/templates" element={<Templates />} />
-                  <Route path="/share/:slug" element={<SharedDoc />} />
-                  
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/editor" element={
-                    <ProtectedRoute>
-                      <Editor />
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/editor/:id" element={
-                    <ProtectedRoute>
-                      <Editor />
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </RouteTracker>
-          </LoadingProvider>
-        </ToastProvider>
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <ToastProvider>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/"            element={<Landing />} />
+            <Route path="/login"       element={<Login />} />
+            <Route path="/register"    element={<Register />} />
+            <Route path="/templates"   element={<Templates />} />
+            <Route path="/pricing"     element={<Pricing />} />
+            <Route path="/editor"      element={<Editor />} />
+            <Route path="/editor/:id"  element={<Editor />} />
+            <Route path="/share/:slug" element={<SharedDoc />} />
+            <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="*"            element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </ToastProvider>
+    </AuthProvider>
   );
 }

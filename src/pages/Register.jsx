@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Zap, Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
+import Logo from '../components/Logo';
 import { useToast } from '../components/Toast';
 
 export default function Register() {
@@ -14,14 +15,9 @@ export default function Register() {
   const { showToast } = useToast();
   const [passwordMismatch, setPasswordMismatch] = useState(false);
   
-  const { signUp, signInWithGoogle, user } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
 
   // Password strength checks
   const criteria = {
@@ -91,18 +87,13 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#080808] font-sans">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#080808] font-sans page-root">
       
       {/* LEFT PANEL - FORM (Mirrored from Login) */}
       <div className="flex-1 flex flex-col justify-center px-6 md:px-12 py-12 bg-[#080808] order-2 md:order-1 relative z-10">
-        <Link to="/" className="md:hidden flex items-center gap-2 mb-12 self-start">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/20">
-            <Zap className="w-4 h-4 text-accent" />
-          </div>
-          <span className="font-serif text-xl text-text-primary tracking-tight">ApexDocs</span>
-        </Link>
+        <Logo theme="dark" className="md:hidden mb-12 self-start" />
 
-        <div className="w-full max-w-[400px] mx-auto">
+        <div className="w-full max-w-[400px] mx-auto animate-in delay-1">
           <div className="mb-8">
             <h1 className="font-serif text-[32px] text-text-primary mb-2">Create an account</h1>
             <p className="text-[15px] font-sans text-text-muted">Start creating beautiful documents today.</p>
@@ -260,12 +251,7 @@ export default function Register() {
 
       {/* RIGHT PANEL - PREVIEW (Mirrored from Login) */}
       <div className="hidden md:flex md:w-[48%] bg-[#111111] relative flex-col items-center justify-center overflow-hidden border-l border-[#222] order-1 md:order-2">
-        <Link to="/" className="absolute top-8 right-8 flex items-center gap-2 group z-20">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/20 group-hover:border-accent/40 transition-colors">
-            <Zap className="w-4 h-4 text-accent" />
-          </div>
-          <span className="font-serif text-xl text-text-primary tracking-tight">ApexDocs</span>
-        </Link>
+        <Logo theme="dark" className="absolute top-8 left-8 z-20" />
 
         {/* Glow blob */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/20 rounded-full blur-[100px] pointer-events-none"></div>

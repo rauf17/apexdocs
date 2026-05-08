@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { getDocument, updateDocument, createShareSlug } from '../lib/firestore';
+import { getDocument, updateDocument, createShareSlug, createDocument } from '../lib/firestore';
 import { templates } from '../data/templates';
 import { useToast } from '../components/Toast';
 import { marked } from 'marked';
 import html2pdf from 'html2pdf.js';
+import GuestEditorBanner from '../components/GuestEditorBanner';
+import AuthGate from '../components/AuthGate';
+import Logo from '../components/Logo';
 
 // Icons
 import { 
@@ -26,20 +29,20 @@ import { tags as t } from '@lezer/highlight';
 
 // Custom Syntax Highlighting to match request
 const customHighlighting = HighlightStyle.define([
-  { tag: t.heading, color: '#6366f1', fontWeight: 'bold' },
-  { tag: t.strong, color: '#ffffff', fontWeight: 'bold' },
-  { tag: t.emphasis, color: '#a5b4fc', fontStyle: 'italic' },
-  { tag: t.monospace, color: '#22c55e' },
-  { tag: t.link, color: '#60a5fa', textDecoration: 'underline' },
-  { tag: t.url, color: '#60a5fa' }
+  { tag: t.heading, color: '#d4a843', fontWeight: 'bold' },
+  { tag: t.strong, color: '#f5f0e8', fontWeight: 'bold' },
+  { tag: t.emphasis, color: '#c4b48a', fontStyle: 'italic' },
+  { tag: t.monospace, color: '#4ade80' },
+  { tag: t.link, color: '#93c5fd', textDecoration: 'underline' },
+  { tag: t.url, color: '#93c5fd' }
 ]);
 
 const apexTheme = EditorView.theme({
-  "&": { backgroundColor: "#0d0d0d", color: "#f0f0f0", height: "100%" },
-  ".cm-content": { fontFamily: "DM Mono, monospace", fontSize: "14px", lineHeight: "1.7", padding: "24px" },
-  "&.cm-focused .cm-cursor": { borderLeftColor: "#6366f1" },
-  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": { backgroundColor: "rgba(99,102,241,0.2)" },
-  ".cm-gutters": { backgroundColor: "#0d0d0d", color: "#333", border: "none" },
+  "&": { backgroundColor: "#0f0d0a", color: "#e8e0d0", height: "100%" },
+  ".cm-content": { fontFamily: "DM Mono, monospace", fontSize: "14px", lineHeight: "1.8", padding: "32px" },
+  "&.cm-focused .cm-cursor": { borderLeftColor: "#d4a843" },
+  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": { backgroundColor: "rgba(212,168,67,0.15)" },
+  ".cm-gutters": { backgroundColor: "#0c0a08", color: "#3a3328", border: "none" },
   ".cm-activeLine": { backgroundColor: "transparent" },
   ".cm-activeLineGutter": { backgroundColor: "transparent", color: "#666" }
 }, { dark: true });
@@ -57,6 +60,7 @@ export default function Editor() {
   const [content, setContent] = useState('');
   const [previewContent, setPreviewContent] = useState('');
   const [theme, setTheme] = useState('dark');
+  const [fontFamily, setFontFamily] = useState('sans');
   const [selectedTemplate, setSelectedTemplate] = useState('blank');
   
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -66,6 +70,7 @@ export default function Editor() {
   const [exporting, setExporting] = useState(false);
   const { showToast } = useToast();
   const [versions, setVersions] = useState([]);
+  const [authGateOpen, setAuthGateOpen] = useState(false);
   
   const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false);
   
@@ -84,6 +89,35 @@ export default function Editor() {
   // Load Document
   useEffect(() => {
     async function loadDoc() {
+      if (!user) {
+        // Guest mode
+        const guestContent = localStorage.getItem('apexdocs_guest_content') || '';
+        const guestTitle = localStorage.getItem('apexdocs_guest_title') || 'Untitled Document';
+        setTitle(guestTitle);
+        setContent(guestContent);
+        setPreviewContent(guestContent);
+        setLoading(false);
+        return;
+      }
+
+      if (user && localStorage.getItem('apexdocs_guest_content')) {
+        const guestContent = localStorage.getItem('apexdocs_guest_content');
+        const guestTitle = localStorage.getItem('apexdocs_guest_title') || 'Untitled Document';
+        showToast('Import your guest document?', 'info', {
+          label: 'Yes',
+          onClick: async () => {
+            try {
+              const newId = await createDocument(user.uid, guestContent, guestTitle);
+              localStorage.removeItem('apexdocs_guest_content');
+              localStorage.removeItem('apexdocs_guest_title');
+              navigate(`/editor/${newId}`);
+            } catch (err) {
+              showToast('Failed to import guest document', 'error');
+            }
+          }
+        });
+      }
+
       if (!id) {
         setLoading(false);
         return;
@@ -99,6 +133,7 @@ export default function Editor() {
         setContent(data.content || '');
         setPreviewContent(data.content || '');
         setSelectedTemplate(data.templateId || 'blank');
+        setFontFamily(data.fontFamily || 'sans');
         setVersions(data.versions || []);
       } catch (err) {
         showToast('Failed to load document', 'error');
@@ -173,6 +208,13 @@ export default function Editor() {
 
   // Save Logic
   const triggerSave = async (currentContent, currentTitle, isManual = false) => {
+    if (!user) {
+      localStorage.setItem('apexdocs_guest_content', currentContent);
+      localStorage.setItem('apexdocs_guest_title', currentTitle);
+      setSaveStatus('Saved locally');
+      return;
+    }
+
     if (!id) return;
     setSaveStatus('Saving...');
     
@@ -191,6 +233,7 @@ export default function Editor() {
         content: currentContent, 
         name: currentTitle, 
         templateId: selectedTemplate,
+        fontFamily: fontFamily,
         versions: newVersions
       });
       setVersions(newVersions);
@@ -295,6 +338,10 @@ export default function Editor() {
   };
 
   const handleShare = async () => {
+    if (!user) {
+      setAuthGateOpen(true);
+      return;
+    }
     if (!id) return;
     try {
       let slug = doc?.shareSlug;
@@ -315,6 +362,10 @@ export default function Editor() {
   };
 
   const handleExportPDF = () => {
+    if (!user) {
+      setAuthGateOpen(true);
+      return;
+    }
     if (!previewRef.current) return;
     setExporting(true);
     
@@ -364,10 +415,10 @@ export default function Editor() {
 
   // Preview Theme Styles
   const previewStyles = {
-    dark: { bg: '#111111', text: '#f0f0f0', wrapperBg: '#080808' },
-    light: { bg: '#ffffff', text: '#111111', wrapperBg: '#f5f5f5' },
-    sepia: { bg: '#f5f0e8', text: '#3d2b1f', wrapperBg: '#e6dfd3' },
-    minimal: { bg: '#fafafa', text: '#111111', wrapperBg: '#ffffff', shadow: 'none', border: '1px solid #eee' }
+    dark: { bg: '#1a1710', text: '#f5f0e8', wrapperBg: '#111009', shadow: '0 4px 60px rgba(0,0,0,0.5)', border: 'none' },
+    light: { bg: '#ffffff', text: '#0c0a08', wrapperBg: '#111009', shadow: '0 4px 60px rgba(0,0,0,0.1)', border: 'none' },
+    sepia: { bg: '#f8f2e6', text: '#3d2b1f', wrapperBg: '#111009', shadow: '0 4px 60px rgba(0,0,0,0.2)', border: 'none' },
+    minimal: { bg: '#fafafa', text: '#111111', wrapperBg: '#111009', shadow: 'none', border: '1px solid #e0e0e0' }
   };
   const activePreviewStyle = previewStyles[theme];
 
@@ -413,19 +464,26 @@ export default function Editor() {
       
       {/* PANEL 1: SIDEBAR */}
       <div 
-        className="shrink-0 bg-[#111111] border-r border-[#222] transition-all duration-250 ease-in-out relative flex flex-col z-20 animate-sidebar-in"
-        style={{ width: sidebarOpen ? '240px' : '0px', animationDelay: '0ms' }}
+        className="shrink-0 bg-bg-secondary border-r border-border transition-all duration-250 ease-in-out relative flex flex-col z-20 animate-sidebar-in"
+        style={{ width: sidebarOpen ? '250px' : '0px', animationDelay: '0ms' }}
       >
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className={`absolute top-1/2 -translate-y-1/2 -right-4 w-8 h-12 bg-[#222] border border-[#333] rounded-r-lg flex items-center justify-center text-[#888] hover:text-white transition-colors z-30 ${!sidebarOpen && 'shadow-lg'}`}
+          className={`absolute top-1/2 -translate-y-1/2 -right-4 w-8 h-12 bg-bg-card border border-border rounded-r-lg flex items-center justify-center text-text-muted hover:text-text-primary transition-colors z-30 ${!sidebarOpen && 'shadow-lg'}`}
         >
           {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar w-[240px]">
-          <div className="p-6 flex flex-col gap-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar w-[250px]">
+          <div className="p-6 flex flex-col gap-6">
             
+            {/* Logo */}
+            <div className="mb-2">
+              <Logo theme="dark" className="scale-90 origin-left mb-1" />
+              <p className="text-[12px] font-sans text-text-muted italic ml-1">Write beautifully.</p>
+            </div>
+            <hr className="border-border" />
+
             {/* Title */}
             <div>
               <input 
@@ -433,29 +491,30 @@ export default function Editor() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={handleTitleBlur}
-                className="w-full bg-transparent border-none font-serif text-[16px] text-white focus:outline-none focus:ring-2 focus:ring-accent/50 rounded px-1 -ml-1"
+                className="w-full bg-transparent border-b border-transparent font-serif text-[18px] text-text-primary focus:outline-none focus:border-accent pb-1 transition-colors"
                 placeholder="Untitled Document"
               />
             </div>
+            <hr className="border-border" />
 
             {/* Template */}
             <div className="relative">
-              <label className="block font-mono text-[10px] text-[#888] uppercase tracking-wider mb-2">Template</label>
+              <label className="block font-mono text-[10px] text-text-muted uppercase tracking-wider mb-2">Template</label>
               <button 
                 onClick={() => setTemplateDropdownOpen(!templateDropdownOpen)}
-                className="w-full flex items-center justify-between bg-[#161616] border border-[#222] rounded py-2 px-3 text-[13px] hover:border-[#333] transition-colors"
+                className="w-full flex items-center justify-between glass rounded py-2 px-3 text-[13px] text-text-primary hover:border-text-secondary transition-colors"
               >
                 <span className="truncate">{templates.find(t => t.id === selectedTemplate)?.name || 'Select Template'}</span>
-                <ChevronDown className="w-4 h-4 text-[#888]" />
+                <ChevronDown className="w-4 h-4 text-text-muted" />
               </button>
               
               {templateDropdownOpen && (
-                <div className="absolute top-full left-0 w-full mt-1 bg-[#161616] border border-[#222] rounded shadow-xl max-h-48 overflow-y-auto z-10 custom-scrollbar">
+                <div className="absolute top-full left-0 w-full mt-1 bg-bg-card border border-border rounded shadow-[0_10px_40px_rgba(0,0,0,0.8)] max-h-48 overflow-y-auto z-10 custom-scrollbar">
                   {templates.map(t => (
                     <button 
                       key={t.id}
                       onClick={() => handleTemplateSelect(t.id)}
-                      className="w-full text-left px-3 py-2 text-[13px] hover:bg-[#222] transition-colors truncate"
+                      className={`w-full text-left px-3 py-2 text-[13px] transition-colors truncate border-l-2 ${selectedTemplate === t.id ? 'border-accent text-accent bg-bg-secondary' : 'border-transparent text-text-primary hover:border-accent hover:bg-bg-secondary'}`}
                     >
                       {t.name}
                     </button>
@@ -463,48 +522,77 @@ export default function Editor() {
                 </div>
               )}
             </div>
+            <hr className="border-border" />
 
             {/* Theme */}
             <div>
-              <label className="block font-mono text-[10px] text-[#888] uppercase tracking-wider mb-2">Theme</label>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setTheme('dark')} className={`w-6 h-6 rounded-full bg-[#080808] border ${theme === 'dark' ? 'border-accent ring-2 ring-accent/30' : 'border-[#333]'}`} title="Dark"></button>
-                <button onClick={() => setTheme('light')} className={`w-6 h-6 rounded-full bg-[#ffffff] border ${theme === 'light' ? 'border-accent ring-2 ring-accent/30' : 'border-[#ccc]'}`} title="Light"></button>
+              <label className="block font-mono text-[10px] text-text-muted uppercase tracking-wider mb-2">Theme</label>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setTheme('dark')} className={`w-6 h-6 rounded-full bg-[#0c0a08] border ${theme === 'dark' ? 'border-accent ring-2 ring-accent/30' : 'border-border'}`} title="Dark"></button>
+                <button onClick={() => setTheme('light')} className={`w-6 h-6 rounded-full bg-[#fafafa] border ${theme === 'light' ? 'border-accent ring-2 ring-accent/30' : 'border-[#ccc]'}`} title="Light"></button>
                 <button onClick={() => setTheme('sepia')} className={`w-6 h-6 rounded-full bg-[#f5f0e8] border ${theme === 'sepia' ? 'border-accent ring-2 ring-accent/30' : 'border-[#d0c6b6]'}`} title="Sepia"></button>
-                <button onClick={() => setTheme('minimal')} className={`w-6 h-6 rounded-full bg-[#fafafa] border ${theme === 'minimal' ? 'border-accent ring-2 ring-accent/30' : 'border-[#eee]'}`} title="Minimal"></button>
+                <button onClick={() => setTheme('minimal')} className={`w-6 h-6 rounded-full bg-[#ffffff] border ${theme === 'minimal' ? 'border-accent ring-2 ring-accent/30' : 'border-[#eee]'}`} title="Minimal"></button>
               </div>
             </div>
+            <hr className="border-border" />
+
+            {/* Font Selector */}
+            <div>
+              <label className="block font-mono text-[10px] text-text-muted uppercase tracking-wider mb-2">Font</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'serif',   label: 'Serif',   font: "'Instrument Serif', serif" },
+                  { id: 'mono',    label: 'Mono',    font: "'DM Mono', monospace" },
+                  { id: 'sans',    label: 'Sans',    font: "'Inter', sans-serif" },
+                  { id: 'classic', label: 'Classic', font: "Georgia, serif" },
+                  { id: 'modern',  label: 'Modern',  font: "'Plus Jakarta Sans', sans-serif" },
+                  { id: 'elegant', label: 'Elegant', font: "'Cormorant Garamond', serif" }
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setFontFamily(f.id)}
+                    style={{ fontFamily: f.font }}
+                    className={`px-3 py-1.5 text-[13px] rounded text-left transition-all border ${fontFamily === f.id ? 'border-accent text-accent bg-accent/[0.05]' : 'border-border text-text-muted bg-bg-card hover:bg-bg-secondary hover:text-text-primary'}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <hr className="border-border" />
 
             {/* Export & Actions */}
             <div className="flex flex-col gap-2">
-              <button onClick={handleExportPDF} disabled={exporting} className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-br from-[#6366f1] to-[#4f46e5] text-white rounded text-[13px] font-medium hover:shadow-[0_0_15px_var(--accent-glow)] transition-all disabled:opacity-70">
+              <button onClick={handleExportPDF} disabled={exporting} className="w-full flex items-center justify-center gap-2 py-2.5 primary-gold-btn rounded text-[13px] font-bold shadow-[0_0_15px_var(--accent-glow)] transition-all disabled:opacity-70">
                 {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 {exporting ? 'Exporting...' : 'Export PDF'}
               </button>
-              <button onClick={handleCopyMarkdown} className="w-full flex items-center justify-center gap-2 py-2 bg-[#161616] hover:bg-[#222] border border-[#222] text-white rounded text-[13px] transition-colors">
-                <Copy className="w-3.5 h-3.5 text-[#888]" /> Copy Markdown
+              <button onClick={handleCopyMarkdown} className="w-full flex items-center justify-center gap-2 py-2 bg-transparent hover:bg-bg-card border border-border hover:border-text-secondary text-text-primary rounded text-[13px] transition-colors">
+                <Copy className="w-3.5 h-3.5 text-text-muted" /> Copy Markdown
               </button>
-              <button onClick={handleShare} className="w-full flex items-center justify-center gap-2 py-2 bg-[#161616] hover:bg-[#222] border border-[#222] text-white rounded text-[13px] transition-colors">
-                <LinkIcon className="w-3.5 h-3.5 text-[#888]" /> Share Link
+              <button onClick={handleShare} className="w-full flex items-center justify-center gap-2 py-2 bg-transparent hover:bg-bg-card border border-border hover:border-text-secondary text-text-primary rounded text-[13px] transition-colors">
+                <LinkIcon className="w-3.5 h-3.5 text-text-muted" /> Share Link
               </button>
             </div>
+            <hr className="border-border" />
 
             {/* Stats */}
             <div>
-              <label className="block font-mono text-[10px] text-[#888] uppercase tracking-wider mb-2">Stats</label>
-              <div className="flex flex-col gap-1 text-[12px] font-mono text-[#888]">
-                <div className="flex justify-between"><span>Words:</span><span className="text-white">{wordCount}</span></div>
-                <div className="flex justify-between"><span>Characters:</span><span className="text-white">{charCount}</span></div>
-                <div className="flex justify-between"><span>Reading time:</span><span className="text-white">~{readTime} min read</span></div>
-                <div className="flex justify-between mt-1"><span>Created:</span><span className="text-white truncate max-w-[100px] text-right">{doc?.createdAt ? new Date(doc.createdAt.seconds * 1000).toLocaleDateString() : 'Today'}</span></div>
+              <label className="block font-mono text-[10px] text-text-muted uppercase tracking-wider mb-2">Stats</label>
+              <div className="flex flex-col gap-1 text-[12px] font-mono text-text-muted">
+                <div className="flex justify-between"><span>Words:</span><span className="text-text-primary">{wordCount}</span></div>
+                <div className="flex justify-between"><span>Characters:</span><span className="text-text-primary">{charCount}</span></div>
+                <div className="flex justify-between"><span>Reading time:</span><span className="text-text-primary">~{readTime} min read</span></div>
+                <div className="flex justify-between mt-1"><span>Created:</span><span className="text-text-primary truncate max-w-[100px] text-right">{doc?.createdAt ? new Date(doc.createdAt.seconds * 1000).toLocaleDateString() : 'Today'}</span></div>
               </div>
             </div>
+            <hr className="border-border" />
 
             {/* Versions */}
             <div>
-              <label className="block font-mono text-[10px] text-[#888] uppercase tracking-wider mb-2">Versions</label>
+              <label className="block font-mono text-[10px] text-text-muted uppercase tracking-wider mb-2">Versions</label>
               {versions.length === 0 ? (
-                <p className="text-[11px] font-mono text-[#666]">No versions saved yet.</p>
+                <p className="text-[11px] font-mono text-text-muted">No versions saved yet.</p>
               ) : (
                 <div className="flex flex-col gap-1.5">
                   {versions.map((v, i) => {
@@ -512,7 +600,7 @@ export default function Editor() {
                     const isToday = date.toDateString() === new Date().toDateString();
                     const label = isToday ? `Today at ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : date.toLocaleString([], {month:'short', day:'numeric', hour: '2-digit', minute:'2-digit'});
                     return (
-                      <div key={i} className="group flex items-center justify-between font-mono text-[11px] text-[#888] hover:bg-[#161616] px-2 py-1 rounded -mx-2 transition-colors cursor-pointer" onClick={() => handleRestoreVersion(v.content)}>
+                      <div key={i} className="group flex items-center justify-between font-mono text-[11px] text-text-muted hover:bg-bg-card px-2 py-1 rounded -mx-2 transition-colors cursor-pointer" onClick={() => handleRestoreVersion(v.content)}>
                         <span>{label}</span>
                         <span className="text-accent opacity-0 group-hover:opacity-100 transition-opacity">Restore</span>
                       </div>
@@ -522,27 +610,55 @@ export default function Editor() {
               )}
             </div>
 
+            {/* Sidebar Bottom */}
+            <div className="mt-auto pt-4 flex flex-col gap-3">
+              {user ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-[13px]">
+                      {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-bold text-text-primary leading-tight">{user.displayName || 'User'}</span>
+                      <span className="text-[10px] font-mono text-text-muted leading-tight truncate max-w-[100px]">{user.email}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => navigate('/dashboard')} className="text-[11px] font-mono text-text-muted hover:text-accent transition-colors">
+                    Dashboard
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 bg-bg-card border border-border rounded-lg text-center">
+                  <Link to="/login" className="text-[13px] font-bold text-accent hover:text-accent-hover transition-colors">
+                    Sign in to sync &rarr;
+                  </Link>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>
 
       {/* PANEL 2: EDITOR */}
-      <div className="flex-1 flex flex-col min-w-[400px] border-r border-[#222] bg-[#0d0d0d] z-10 animate-sidebar-in" style={{ animationDelay: '100ms' }}>
+      <div className="flex-1 flex flex-col min-w-[400px] border-r border-border bg-[#0f0d0a] z-10 animate-sidebar-in" style={{ animationDelay: '100ms' }}>
         
+        <GuestEditorBanner user={user} />
+
         {/* Toolbar */}
-        <div className="h-12 bg-[#111111] border-b border-[#222] flex items-center px-4 gap-4 shrink-0 overflow-x-auto scrollbar-none sticky top-0 z-10">
+        <div className="h-12 bg-bg-secondary border-b border-border flex items-center px-4 gap-4 shrink-0 overflow-x-auto scrollbar-none sticky top-0 z-10">
           <div className="flex items-center gap-1">
             <ToolbarButton onClick={() => insertLineStart('# ')} label="H1" font="font-mono text-xs font-bold" />
             <ToolbarButton onClick={() => insertLineStart('## ')} label="H2" font="font-mono text-xs font-bold" />
             <ToolbarButton onClick={() => insertLineStart('### ')} label="H3" font="font-mono text-xs font-bold" />
           </div>
-          <div className="w-px h-6 bg-[#333]"></div>
+          <div className="w-px h-6 bg-border"></div>
           <div className="flex items-center gap-1">
             <ToolbarButton onClick={() => insertMarkdown('**', '**', 'bold')} icon={<Bold className="w-4 h-4" />} />
             <ToolbarButton onClick={() => insertMarkdown('*', '*', 'italic')} icon={<Italic className="w-4 h-4" />} />
             <ToolbarButton onClick={() => insertMarkdown('~~', '~~', 'strikethrough')} icon={<Strikethrough className="w-4 h-4" />} />
           </div>
-          <div className="w-px h-6 bg-[#333]"></div>
+          <div className="w-px h-6 bg-border"></div>
           <div className="flex items-center gap-1">
             <ToolbarButton onClick={() => insertMarkdown('[', '](url)', 'link')} icon={<LinkIcon className="w-4 h-4" />} />
             <ToolbarButton onClick={() => insertMarkdown('![', '](image-url)', 'image')} icon={<ImageIcon className="w-4 h-4" />} />
@@ -554,17 +670,17 @@ export default function Editor() {
             <ToolbarButton onClick={() => insertLineStart('- ')} icon={<List className="w-4 h-4" />} />
             <ToolbarButton onClick={() => insertLineStart('1. ')} icon={<ListOrdered className="w-4 h-4" />} />
           </div>
-          <div className="w-px h-6 bg-[#333]"></div>
+          <div className="w-px h-6 bg-border"></div>
           <div className="group relative">
-            <div className="flex items-center justify-center w-[28px] h-[28px] bg-transparent text-[#888] cursor-help">
+            <div className="flex items-center justify-center w-[28px] h-[28px] bg-transparent text-text-muted hover:text-text-primary transition-colors cursor-help">
               <Keyboard className="w-4 h-4" />
             </div>
-            <div className="absolute right-0 top-full mt-2 w-48 bg-[#161616] border border-[#222] rounded-lg p-3 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity text-[11px] font-mono text-[#888] flex flex-col gap-1.5 z-50">
-              <div className="flex justify-between"><span>Save</span><span className="text-white">Ctrl+S</span></div>
-              <div className="flex justify-between"><span>Toggle Preview</span><span className="text-white">Ctrl+Shift+P</span></div>
-              <div className="flex justify-between"><span>Export PDF</span><span className="text-white">Ctrl+Shift+E</span></div>
-              <div className="flex justify-between"><span>Bold</span><span className="text-white">Ctrl+B</span></div>
-              <div className="flex justify-between"><span>Italic</span><span className="text-white">Ctrl+I</span></div>
+            <div className="absolute right-0 top-full mt-2 w-48 bg-bg-card border border-border rounded-lg p-3 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity text-[11px] font-mono text-text-muted flex flex-col gap-1.5 z-50">
+              <div className="flex justify-between"><span>Save</span><span className="text-text-primary">Ctrl+S</span></div>
+              <div className="flex justify-between"><span>Toggle Preview</span><span className="text-text-primary">Ctrl+Shift+P</span></div>
+              <div className="flex justify-between"><span>Export PDF</span><span className="text-text-primary">Ctrl+Shift+E</span></div>
+              <div className="flex justify-between"><span>Bold</span><span className="text-text-primary">Ctrl+B</span></div>
+              <div className="flex justify-between"><span>Italic</span><span className="text-text-primary">Ctrl+I</span></div>
             </div>
           </div>
         </div>
@@ -573,13 +689,13 @@ export default function Editor() {
         <div ref={editorRef} className="flex-1 overflow-auto outline-none focus-within:ring-1 focus-within:ring-accent/10 transition-shadow"></div>
 
         {/* Bottom Status Bar */}
-        <div className="h-8 bg-[#111111] border-t border-[#222] flex items-center justify-between px-4 shrink-0 fixed bottom-0 left-[240px] right-0 md:static z-20">
-          <span className="font-mono text-[11px] text-[#666]">Ln {cursorPos.line}, Col {cursorPos.col}</span>
-          <span className="font-mono text-[11px] text-[#888] hidden sm:block">{wordCount} words &middot; {charCount} chars &middot; ~{readTime} min</span>
+        <div className="h-8 bg-[#0c0a08] border-t border-border flex items-center justify-between px-4 shrink-0 fixed bottom-0 left-[250px] right-0 md:static z-20">
+          <span className="font-mono text-[11px] text-text-muted">Ln {cursorPos.line}, Col {cursorPos.col}</span>
+          <span className="font-mono text-[11px] text-text-secondary hidden sm:block">{wordCount} words &middot; {charCount} chars &middot; ~{readTime} min</span>
           <div className="font-mono text-[11px] flex items-center gap-1.5 min-w-[80px] justify-end">
-            {saveStatus === 'Saving...' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
+            {saveStatus === 'Saving...' && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>}
             {saveStatus === 'Saved ✓' && <span className="w-1.5 h-1.5 rounded-full bg-success animate-fade-in"></span>}
-            <span className={saveStatus === 'Unsaved changes' ? 'text-[#666]' : saveStatus === 'Saving...' ? 'text-amber-500' : 'text-success animate-fade-in'}>
+            <span className={saveStatus === 'Unsaved changes' ? 'text-text-muted' : saveStatus === 'Saving...' ? 'text-accent' : 'text-success animate-fade-in'}>
               {saveStatus}
             </span>
           </div>
@@ -588,12 +704,12 @@ export default function Editor() {
 
       {/* PANEL 3: PREVIEW */}
       <div 
-        className="shrink-0 flex flex-col bg-[#080808] transition-all duration-250 ease-in-out relative z-0 animate-sidebar-in"
+        className="shrink-0 flex flex-col bg-bg-primary transition-all duration-250 ease-in-out relative z-0 animate-sidebar-in"
         style={{ width: previewOpen ? '50%' : '0px', animationDelay: '200ms', backgroundColor: activePreviewStyle.wrapperBg }}
       >
         <button 
           onClick={() => setPreviewOpen(!previewOpen)}
-          className={`absolute top-2 -left-10 md:static md:w-auto h-8 mx-4 mt-2 px-3 bg-[#111111] border border-[#222] rounded-md flex items-center justify-center gap-2 text-[12px] font-mono text-[#888] hover:text-white transition-colors z-30 self-end md:self-start ${!previewOpen && 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto'}`}
+          className={`absolute top-2 -left-10 md:static md:w-auto h-8 mx-4 mt-2 px-3 bg-bg-card border border-border rounded-md flex items-center justify-center gap-2 text-[12px] font-mono text-text-muted hover:text-text-primary transition-colors z-30 self-end md:self-start ${!previewOpen && 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto'}`}
         >
           {previewOpen ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           <span className="hidden md:inline">{previewOpen ? 'Hide Preview' : 'Show Preview'}</span>
@@ -601,11 +717,11 @@ export default function Editor() {
 
         {previewOpen && (
           <>
-            <div className="h-12 border-b border-[#222]/50 flex items-center justify-between px-4 shrink-0 bg-transparent">
-              <span className="font-mono text-[12px] text-[#888]">Preview</span>
+            <div className="h-12 border-b border-border/50 flex items-center justify-between px-4 shrink-0 bg-transparent">
+              <span className="font-mono text-[12px] text-text-muted">Preview</span>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-[10px] text-[#888] uppercase tracking-wider">{theme}</span>
-                <button onClick={handleExportPDF} className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white rounded text-[12px] font-medium transition-colors">
+                <span className="font-mono text-[10px] text-text-muted uppercase tracking-wider">{theme}</span>
+                <button onClick={handleExportPDF} className="px-4 py-1.5 primary-gold-btn rounded text-[12px] transition-all hover:shadow-[0_0_15px_var(--accent-glow)] shadow-md">
                   Export PDF
                 </button>
               </div>
@@ -626,7 +742,7 @@ export default function Editor() {
                 }}
               >
                 <div 
-                  className="prose max-w-none preview-markdown"
+                  className={`prose max-w-none preview-markdown font-${fontFamily}`}
                   style={{ '--theme-heading': theme === 'dark' ? '#fff' : '#111', '--theme-link': '#6366f1' }}
                   dangerouslySetInnerHTML={{ __html: marked.parse(previewContent || '') }}
                 />
@@ -636,7 +752,7 @@ export default function Editor() {
         )}
       </div>
 
-
+      <AuthGate isOpen={authGateOpen} onClose={() => setAuthGateOpen(false)} />
 
       <style dangerouslySetInnerHTML={{__html: `
         .transition-250 { transition-duration: 250ms; }
@@ -644,21 +760,35 @@ export default function Editor() {
         /* Markdown Preview Custom Styles */
         .preview-markdown h1 { font-family: 'Instrument Serif', serif; font-size: 32px; color: var(--theme-heading); margin-bottom: 0.5em; line-height: 1.2; font-weight: normal; }
         .preview-markdown h2 { font-family: 'Instrument Serif', serif; font-size: 24px; color: var(--theme-heading); margin-top: 1.5em; margin-bottom: 0.5em; font-weight: normal; }
-        .preview-markdown h3 { font-family: 'Geist', sans-serif; font-size: 18px; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .preview-markdown h3 { font-family: 'Geist', sans-serif; font-size: 18px; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; color: var(--theme-heading); }
         .preview-markdown p { font-family: 'Geist', sans-serif; font-size: 16px; line-height: 1.8; margin-bottom: 1em; }
-        .preview-markdown code { font-family: 'DM Mono', monospace; font-size: 13px; color: #22c55e; background: #111; padding: 0.2em 0.4em; border-radius: 3px; }
-        .preview-markdown pre { background: #0d0d0d; padding: 16px; border-radius: 8px; overflow-x: auto; margin-bottom: 1em; }
-        .preview-markdown pre code { background: transparent; padding: 0; color: #f0f0f0; }
-        .preview-markdown blockquote { border-left: 3px solid #6366f1; padding-left: 1em; margin: 1em 0; font-style: italic; color: #888; }
-        .preview-markdown table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
-        .preview-markdown th, .preview-markdown td { border: 1px solid #333; padding: 8px; text-align: left; }
-        .preview-markdown th { background-color: rgba(0,0,0,0.05); }
+        .preview-markdown code { font-family: 'DM Mono', monospace; font-size: 13px; color: #4ade80; background: rgba(0,0,0,0.05); padding: 0.2em 0.4em; border-radius: 3px; }
+        .preview-markdown pre { background: rgba(0,0,0,0.03); padding: 24px; border-radius: 8px; overflow-x: auto; margin-bottom: 1.5em; border: 1px solid rgba(0,0,0,0.05); }
+        .preview-markdown pre code { background: transparent; padding: 0; color: inherit; }
+        .preview-markdown blockquote { border-left: 3px solid var(--accent); padding-left: 1.2em; margin: 1.5em 0; font-style: italic; opacity: 0.8; }
+        .preview-markdown table { width: 100%; border-collapse: collapse; margin-bottom: 1.5em; }
+        .preview-markdown th, .preview-markdown td { border: 1px solid rgba(0,0,0,0.1); padding: 12px; text-align: left; }
+        .preview-markdown th { background-color: rgba(0,0,0,0.03); font-weight: bold; }
         .preview-markdown a { color: var(--theme-link); text-decoration: none; }
         .preview-markdown a:hover { text-decoration: underline; }
-        .preview-markdown hr { border: 0; border-top: 1px solid #333; margin: 2em 0; }
-        .preview-markdown ul, .preview-markdown ol { padding-left: 1.5em; margin-bottom: 1em; }
+        .preview-markdown hr { border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 2.5em 0; }
+        .preview-markdown ul, .preview-markdown ol { padding-left: 1.5em; margin-bottom: 1.5em; }
         .preview-markdown li { margin-bottom: 0.5em; line-height: 1.8; }
         
+        /* Font classes */
+        .font-serif { font-family: 'Instrument Serif', serif !important; }
+        .font-mono  { font-family: 'DM Mono', monospace !important; }
+        .font-sans  { font-family: 'Inter', sans-serif !important; }
+        .font-classic { font-family: Georgia, serif !important; }
+        .font-modern { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        .font-elegant { font-family: 'Cormorant Garamond', serif !important; }
+        .font-serif p, .font-serif li, .font-serif h3 { font-family: 'Instrument Serif', serif !important; }
+        .font-mono p, .font-mono li, .font-mono h3 { font-family: 'DM Mono', monospace !important; }
+        .font-sans p, .font-sans li, .font-sans h3 { font-family: 'Inter', sans-serif !important; }
+        .font-classic p, .font-classic li, .font-classic h3 { font-family: Georgia, serif !important; }
+        .font-modern p, .font-modern li, .font-modern h3 { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        .font-elegant p, .font-elegant li, .font-elegant h3 { font-family: 'Cormorant Garamond', serif !important; }
+
         /* Animations */
         @keyframes sidebar-in {
           from { transform: translateY(20px); opacity: 0; }

@@ -1,12 +1,27 @@
-import { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { ArrowRight, CheckCircle2, MonitorPlay, FileText, DownloadCloud, Palette, Share2, SaveAll, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MonitorPlay, FileText, DownloadCloud, Palette, Share2, SaveAll } from 'lucide-react';
+import Logo from '../components/Logo';
 import clsx from 'clsx';
 import { templates } from '../data/templates';
 
 export default function Landing() {
   const observerRef = useRef(null);
+  const [activeFeature, setActiveFeature] = useState("All");
+  const [displayedFeature, setDisplayedFeature] = useState("All");
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const navigate = useNavigate();
+
+  const handleFeatureTabClick = (tab) => {
+    if (tab === activeFeature) return;
+    setIsTransitioning(true);
+    setActiveFeature(tab);
+    setTimeout(() => {
+      setDisplayedFeature(tab);
+      setIsTransitioning(false);
+    }, 150);
+  };
 
   useEffect(() => {
     // Parallax mouse effect for hero cards
@@ -42,7 +57,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="bg-bg-primary min-h-screen">
+    <div className="bg-bg-primary min-h-screen page-root">
       <Navbar />
 
       {/* Hero Section */}
@@ -51,7 +66,7 @@ export default function Landing() {
         
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-[55%_45%] gap-12 items-center w-full z-10">
           <div className="flex flex-col items-start pt-12 md:pt-0">
-            <div className="animate-hero" style={{ animationDelay: '0ms' }}>
+            <div className="animate-in delay-1">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-bg-card/50 backdrop-blur-sm mb-6">
                 <span className="w-2 h-2 rounded-full bg-success animate-pulse-slow"></span>
                 <span className="text-xs font-mono text-text-secondary tracking-wide">Free Forever · No watermarks</span>
@@ -59,25 +74,29 @@ export default function Landing() {
             </div>
             
             <h1 className="font-serif text-6xl md:text-[68px] leading-[1.1] mb-6">
-              <div className="animate-hero text-white" style={{ animationDelay: '150ms' }}>Write in Markdown.</div>
-              <div className="animate-hero bg-gradient-to-r from-accent to-[#818cf8] bg-clip-text text-transparent" style={{ animationDelay: '300ms' }}>Export Anything.</div>
+              <div className="animate-in delay-2 text-white">Write in Markdown.</div>
+              <div className="animate-in delay-3 bg-gradient-to-r from-accent to-[#818cf8] bg-clip-text text-transparent">Export Anything.</div>
             </h1>
             
-            <p className="animate-hero text-lg text-text-muted font-sans mb-8 max-w-lg" style={{ animationDelay: '450ms' }}>
+            <p className="animate-in delay-4 text-lg text-text-muted font-sans mb-8 max-w-lg">
               Create stunning resumes, invoices, reports and proposals. Write once, export as a beautiful PDF instantly.
             </p>
             
-            <div className="animate-hero flex flex-wrap gap-4 mb-8" style={{ animationDelay: '600ms' }}>
-              <Link to="/register" className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-accent hover:bg-accent-hover text-white font-medium shadow-[0_0_20px_var(--accent-glow)] transition-all hover:scale-105 active:scale-95">
-                Start Writing Free <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link to="/templates" className="px-6 py-3.5 rounded-xl border border-border hover:border-text-primary text-text-primary font-medium transition-all hover:bg-bg-secondary active:scale-95">
-                Browse Templates
-              </Link>
+            <div className="animate-in delay-5 flex flex-col gap-4 mb-8">
+              <div className="flex flex-wrap gap-4">
+                <button onClick={() => navigate('/editor')} className="magnetic-btn primary-gold-btn flex items-center gap-2 px-6 py-3.5 rounded-xl">
+                  Start Writing Free <ArrowRight className="w-4 h-4" />
+                </button>
+                <Link to="/templates" className="px-6 py-3.5 rounded-xl border border-border hover:border-text-primary text-text-primary font-medium transition-all hover:bg-bg-secondary active:scale-95">
+                  Browse Templates
+                </Link>
+              </div>
+              <div className="text-sm font-mono text-text-secondary mt-2">
+                No account needed to start
+              </div>
             </div>
             
-            <div className="animate-hero flex flex-wrap gap-4 text-sm font-mono text-text-secondary" style={{ animationDelay: '750ms' }}>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-success" /> No account needed</span>
+            <div className="animate-in delay-5 flex flex-wrap gap-4 text-sm font-mono text-text-secondary">
               <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-success" /> No watermarks</span>
             </div>
           </div>
@@ -116,36 +135,60 @@ export default function Landing() {
             <h2 className="font-serif text-4xl md:text-[42px] text-text-primary">Everything you need, nothing you don't.</h2>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex justify-center mb-12 relative">
+            <div className="flex gap-2 p-1 bg-bg-card border border-border rounded-full relative">
+              {['All', 'Writing', 'Export', 'Templates'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => handleFeatureTabClick(tab)}
+                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all relative z-10 ${activeFeature === tab ? 'text-bg-primary' : 'text-text-secondary hover:text-text-primary'}`}
+                >
+                  {tab}
+                </button>
+              ))}
+              <div 
+                className="absolute top-1 bottom-1 bg-accent rounded-full transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_15px_var(--accent-glow)] z-0"
+                style={{
+                  width: activeFeature === 'All' ? '64px' : activeFeature === 'Writing' ? '88px' : activeFeature === 'Export' ? '82px' : '106px',
+                  left: activeFeature === 'All' ? '4px' : activeFeature === 'Writing' ? '76px' : activeFeature === 'Export' ? '172px' : '262px'
+                }}
+              />
+            </div>
+          </div>
+          
+          <div 
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-150"
+            style={{ opacity: isTransitioning ? 0 : 1, transform: isTransitioning ? 'scale(0.95)' : 'scale(1)' }}
+          >
             <FeatureCard 
-              icon={<MonitorPlay />} title="Live Preview" 
+              icon={<MonitorPlay />} title="Live Preview" category="Writing" activeFeature={displayedFeature}
               desc="Real-time rendering as you type. What you see is exactly what you get in the final PDF." 
               delay="0ms" 
             />
             <FeatureCard 
-              icon={<FileText />} title="10+ Templates" 
+              icon={<FileText />} title="10+ Templates" category="Templates" activeFeature={displayedFeature}
               desc="Start instantly with professional templates for resumes, invoices, proposals, and more." 
-              delay="100ms" 
+              delay="60ms" 
             />
             <FeatureCard 
-              icon={<DownloadCloud />} title="Instant Export" 
+              icon={<DownloadCloud />} title="Instant Export" category="Export" activeFeature={displayedFeature}
               desc="One click to generate a beautiful, print-ready PDF. Zero watermarks, ever." 
-              delay="200ms" 
+              delay="120ms" 
             />
             <FeatureCard 
-              icon={<Palette />} title="Multiple Themes" 
+              icon={<Palette />} title="Multiple Themes" category="Writing" activeFeature={displayedFeature}
               desc="Customize your writing environment with meticulously crafted syntax themes." 
-              delay="300ms" 
+              delay="180ms" 
             />
             <FeatureCard 
-              icon={<Share2 />} title="Share Anywhere" 
+              icon={<Share2 />} title="Share Anywhere" category="Export" activeFeature={displayedFeature}
               desc="Generate a public link instantly to share your document securely with anyone." 
-              delay="400ms" 
+              delay="240ms" 
             />
             <FeatureCard 
-              icon={<SaveAll />} title="Auto-Save" 
+              icon={<SaveAll />} title="Auto-Save" category="Writing" activeFeature={displayedFeature}
               desc="Never lose a word. Your work is automatically saved to the cloud securely." 
-              delay="500ms" 
+              delay="300ms" 
             />
           </div>
         </div>
@@ -212,9 +255,10 @@ export default function Landing() {
           
           <h2 className="font-serif text-4xl md:text-[42px] text-white mb-4 relative z-10">Ready to create your first document?</h2>
           <p className="text-indigo-100 text-lg mb-8 max-w-2xl mx-auto relative z-10">Join thousands of writers, developers and professionals who trust ApexDocs for their important documents.</p>
-          <Link to="/register" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-accent hover:bg-bg-primary font-bold shadow-xl transition-all hover:scale-105 active:scale-95 relative z-10">
+          <button onClick={() => navigate('/editor')} className="magnetic-btn primary-gold-btn inline-flex items-center gap-2 px-8 py-4 rounded-xl shadow-xl relative z-10">
             Get Started Free <ArrowRight className="w-5 h-5" />
-          </Link>
+          </button>
+          <p className="text-indigo-200 text-sm mt-6 font-mono relative z-10">No account needed to start</p>
         </div>
       </section>
 
@@ -222,17 +266,14 @@ export default function Landing() {
       <footer className="border-t border-border bg-bg-secondary py-12">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <Zap className="w-5 h-5 text-accent" />
-              <span className="font-serif text-xl tracking-tight text-text-primary">ApexDocs</span>
-            </Link>
+            <Logo theme="dark" className="mb-4" />
             <p className="text-sm text-text-muted max-w-xs">The modern way to write, design, and share markdown documents.</p>
           </div>
           <div className="flex gap-8">
             <div className="flex flex-col gap-3">
               <Link to="/templates" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Templates</Link>
-              <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">GitHub</a>
-              <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Privacy</a>
+              <Link to="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">GitHub</Link>
+              <Link to="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Privacy</Link>
             </div>
           </div>
           <div className="md:text-right flex flex-col justify-end">
@@ -269,13 +310,17 @@ export default function Landing() {
   );
 }
 
-function FeatureCard({ icon, title, desc, delay }) {
+function FeatureCard({ icon, title, desc, delay, category, activeFeature }) {
+  const isVisible = activeFeature === 'All' || activeFeature === category;
+  
+  if (!isVisible) return null;
+
   return (
     <div 
-      className="animate-on-scroll bg-[#ffffff06] border border-[#222] rounded-xl p-6 hover:border-border-hover transition-colors glass"
+      className="feature-card animate-in bg-bg-elevated border border-border rounded-xl p-6 hover:border-border-hover transition-all"
       style={{ animationDelay: delay }}
     >
-      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-6 text-accent border border-accent/20">
+      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-6 text-accent border border-accent/20 glow-pulse">
         {icon}
       </div>
       <h3 className="font-sans font-bold text-lg text-text-primary mb-2">{title}</h3>

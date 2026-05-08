@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Zap, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import Logo from '../components/Logo';
 import { useToast } from '../components/Toast';
 
 export default function Login() {
@@ -11,14 +12,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
   
-  const { signIn, signInWithGoogle, user } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,15 +42,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#080808] font-sans">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#080808] font-sans page-root">
       {/* LEFT PANEL - PREVIEW */}
       <div className="hidden md:flex md:w-[48%] bg-[#111111] relative flex-col items-center justify-center overflow-hidden border-r border-[#222]">
-        <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 group z-20">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/20 group-hover:border-accent/40 transition-colors">
-            <Zap className="w-4 h-4 text-accent" />
-          </div>
-          <span className="font-serif text-xl text-text-primary tracking-tight">ApexDocs</span>
-        </Link>
+        <Logo theme="dark" className="absolute top-8 left-8 z-20" />
 
         {/* Glow blob */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/20 rounded-full blur-[100px] pointer-events-none"></div>
@@ -84,25 +75,15 @@ export default function Login() {
       {/* RIGHT PANEL - FORM */}
       <div className="flex-1 flex flex-col justify-center px-6 md:px-12 py-12 bg-[#080808]">
         {/* Mobile Logo */}
-        <Link to="/" className="md:hidden flex items-center gap-2 mb-12 self-start">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/20">
-            <Zap className="w-4 h-4 text-accent" />
-          </div>
-          <span className="font-serif text-xl text-text-primary tracking-tight">ApexDocs</span>
-        </Link>
+        <Logo theme="dark" className="md:hidden mb-12 self-start" />
 
-        <div className="w-full max-w-[400px] mx-auto">
+        <div className="w-full max-w-[400px] mx-auto animate-in delay-1">
           <div className="mb-8">
             <h1 className="font-serif text-[32px] text-text-primary mb-2">Welcome back</h1>
             <p className="text-[15px] font-sans text-text-muted">Sign in to continue to ApexDocs</p>
           </div>
 
-          {error && (
-            <div className={`mb-6 p-4 rounded-lg bg-danger/10 border border-danger/30 flex items-start gap-3 ${shake ? 'animate-shake' : ''}`}>
-              <AlertCircle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
-              <p className="text-[14px] text-danger font-sans">{error}</p>
-            </div>
-          )}
+
 
           <button 
             onClick={handleGoogleSignIn}
@@ -162,7 +143,7 @@ export default function Login() {
                 </button>
               </div>
               <div className="flex justify-end mt-2">
-                <a href="#" className="font-mono text-[12px] text-accent hover:underline">Forgot password?</a>
+                <Link to="#" className="font-mono text-[12px] text-accent hover:underline">Forgot password?</Link>
               </div>
             </div>
 

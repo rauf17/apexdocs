@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getDocuments, createDocument, toggleStar, deleteDocument } from '../lib/firestore';
 import { 
-  Zap, Plus, FileText, Star, Clock, LayoutTemplate, 
   Settings, LogOut, Search, LayoutGrid, List, AlertCircle 
 } from 'lucide-react';
+import Logo from '../components/Logo';
 import DocumentCard from '../components/DocumentCard';
 import SkeletonCard from '../components/SkeletonCard';
 import { useToast } from '../components/Toast';
@@ -155,21 +155,16 @@ export default function Dashboard() {
   const starredCount = documents.filter(d => d.isStarred).length;
 
   return (
-    <div className="flex h-screen bg-[#080808] overflow-hidden text-white font-sans selection:bg-accent selection:text-white">
+    <div className="flex h-screen bg-[#080808] overflow-hidden text-white font-sans selection:bg-accent selection:text-white page-root">
       
       {/* SIDEBAR */}
       <aside className="w-[260px] bg-[#111111] border-r border-[#222] flex flex-col shrink-0 animate-sidebar z-20">
         <div className="p-6">
-          <Link to="/" className="flex items-center gap-2 mb-8 group">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/20 group-hover:border-accent/40 transition-colors">
-              <Zap className="w-4 h-4 text-accent" />
-            </div>
-            <span className="font-serif text-xl tracking-tight text-white">ApexDocs</span>
-          </Link>
+          <Logo theme="dark" className="mb-8" />
 
           <button 
             onClick={handleCreateNew}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-br from-[#6366f1] to-[#4f46e5] text-white rounded-lg font-medium text-[14px] hover:shadow-[0_0_15px_var(--accent-glow)] transition-all active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-br from-[#6366f1] to-[#4f46e5] text-white rounded-lg font-medium text-[14px] hover:shadow-[0_0_15px_var(--accent-glow)] transition-all active:scale-[0.98] glow-pulse"
           >
             <Plus className="w-4 h-4" /> New Document
           </button>
@@ -246,7 +241,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 mb-6">
             <StatPill icon={<FileText className="w-3.5 h-3.5" />} text={`${documents.length} Documents`} />
             <StatPill icon={<Star className="w-3.5 h-3.5 text-[#f59e0b]" />} text={`${starredCount} Starred`} />
-            <StatPill icon={<Zap className="w-3.5 h-3.5 text-accent" />} text="Free Plan" />
+            <StatPill icon={<span className="text-accent">✨</span>} text={<>Free Plan &middot; <Link to="/pricing" className="text-accent hover:underline ml-1">Upgrade &rarr;</Link></>} />
           </div>
 
           {/* FILTER TABS */}
@@ -283,7 +278,7 @@ export default function Dashboard() {
           ) : filteredDocuments.length > 0 ? (
             <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 animate-fade-in" : "flex flex-col border border-[#222] rounded-xl overflow-hidden animate-fade-in"}>
               {filteredDocuments.map((doc, idx) => (
-                <div key={doc.id} className="animate-slide-up" style={{ animationDelay: `${idx * 40}ms` }}>
+                <div key={doc.id} className="animate-in" style={{ animationDelay: `${idx * 40}ms` }}>
                   <DocumentCard 
                     doc={doc} 
                     view={viewMode} 

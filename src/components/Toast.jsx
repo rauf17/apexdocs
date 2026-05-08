@@ -14,9 +14,9 @@ export function useToast() {
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const showToast = useCallback((message, type = 'info') => {
+  const showToast = useCallback((message, type = 'info', action = null) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts((prev) => [...prev, { id, message, type, action }]);
 
     setTimeout(() => {
       removeToast(id);
@@ -46,7 +46,7 @@ export function ToastProvider({ children }) {
   );
 }
 
-function Toast({ message, type, isLeaving, onClose }) {
+function Toast({ message, type, isLeaving, action, onClose }) {
   const icons = {
     success: <CheckCircle2 className="w-4 h-4 text-success" />,
     error: <AlertCircle className="w-4 h-4 text-danger" />,
@@ -67,12 +67,22 @@ function Toast({ message, type, isLeaving, onClose }) {
         {icons[type]}
         <span className="text-[14px] font-sans text-white">{message}</span>
       </div>
-      <button 
-        onClick={onClose}
-        className="p-1 text-[#888] hover:text-white rounded-full transition-colors"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+      <div className="flex items-center gap-2">
+        {action && (
+          <button 
+            onClick={() => { action.onClick(); onClose(); }}
+            className="text-[13px] font-bold text-accent hover:text-accent-hover transition-colors whitespace-nowrap px-2"
+          >
+            {action.label}
+          </button>
+        )}
+        <button 
+          onClick={onClose}
+          className="p-1 text-[#888] hover:text-white rounded-full transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }

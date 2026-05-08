@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getDocumentBySlug } from '../lib/firestore';
-import { Zap, Loader2, FileText, ArrowRight } from 'lucide-react';
+import { Loader2, FileText, ArrowRight } from 'lucide-react';
 import { marked } from 'marked';
+import Logo from '../components/Logo';
 
 export default function SharedDoc() {
   const { slug } = useParams();
@@ -50,8 +51,7 @@ export default function SharedDoc() {
       {/* MINIMAL TOP BAR */}
       <header className="h-16 fixed top-0 left-0 right-0 bg-[#080808]/80 backdrop-blur-md border-b border-[#222] z-50 flex items-center justify-between px-6">
         <Link to="/" className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-accent" />
-          <span className="font-serif text-lg tracking-tight text-white">ApexDocs</span>
+          <Logo theme="dark" />
         </Link>
         <Link to="/register" className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-[13px] font-medium rounded-lg transition-colors">
           Open in ApexDocs

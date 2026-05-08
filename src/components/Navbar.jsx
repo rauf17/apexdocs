@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Zap, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import Logo from './Logo';
 import clsx from 'clsx';
 
 export default function Navbar() {
@@ -26,22 +27,15 @@ export default function Navbar() {
       isScrolled ? 'bg-bg-primary/90 backdrop-blur-md border-border' : 'bg-transparent border-transparent'
     )}>
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group" onClick={closeMenu}>
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center border border-accent/20 group-hover:border-accent/40 transition-colors">
-            <Zap className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-          </div>
-          <span className="font-serif text-2xl tracking-tight text-text-primary">ApexDocs</span>
-        </Link>
+        <Logo theme="dark" onClick={closeMenu} />
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <div className="flex items-center gap-6">
-            <Link to="/templates" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
-              Templates
-            </Link>
-          </div>
+        <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+          <Link to="/templates" className="text-text-secondary hover:text-text-primary transition-colors">Templates</Link>
+          <Link to="/pricing" className="text-text-secondary hover:text-text-primary transition-colors">Pricing</Link>
+          <Link to="#" className="text-text-secondary hover:text-text-primary transition-colors">Features</Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-4 pl-4 border-l border-border">
             {user ? (
               <>
                 <Link to="/dashboard" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
