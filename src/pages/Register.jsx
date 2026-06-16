@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, X, AlertCircle } from 'lucide-react';
 import Logo from '../components/Logo';
 import { useToast } from '../components/Toast';
 
@@ -12,6 +12,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { showToast } = useToast();
   const [passwordMismatch, setPasswordMismatch] = useState(false);
 
@@ -64,22 +65,28 @@ export default function Register() {
     }
 
     setLoading(true);
+    setError('');
     try {
       await signUp(name, email, password);
       navigate('/dashboard');
     } catch (err) {
-      showToast(err.message || 'Failed to create account.', 'error');
+      const msg = err.message || 'Failed to create account.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    setError('');
     try {
       await signInWithGoogle()
       navigate("/dashboard")
     } catch (err) {
-      showToast(err.message);
+      const msg = err.message || 'Google sign in failed.';
+      setError(msg);
+      showToast(msg, 'error');
     }
   }
 
