@@ -5,7 +5,6 @@ import { getDocument, updateDocument, createShareSlug, createDocument } from '..
 import { templates } from '../data/templates';
 import { useToast } from '../components/Toast';
 import { marked } from 'marked';
-import html2pdf from 'html2pdf.js';
 import GuestEditorBanner from '../components/GuestEditorBanner';
 import AuthGate from '../components/AuthGate';
 import Logo from '../components/Logo';
@@ -67,7 +66,7 @@ export default function Editor() {
   const [previewOpen, setPreviewOpen] = useState(true);
   
   const [saveStatus, setSaveStatus] = useState('Saved ✓'); // 'Saved ✓', 'Saving...', 'Unsaved changes'
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState(false); // kept for button disabled state during popup open
   const { showToast } = useToast();
   const [versions, setVersions] = useState([]);
   const [authGateOpen, setAuthGateOpen] = useState(false);
@@ -366,51 +365,198 @@ export default function Editor() {
       setAuthGateOpen(true);
       return;
     }
-    if (!previewRef.current) return;
-    setExporting(true);
-    
-    const clone = previewRef.current.cloneNode(true);
-    // Apply print-friendly styling
-    clone.style.padding = '40px';
-    clone.style.color = '#000';
-    clone.style.backgroundColor = '#fff';
-    clone.style.fontFamily = 'Geist, sans-serif';
-    clone.style.boxShadow = 'none';
-    
-    // Inject CSS
-    const style = document.createElement('style');
-    style.innerHTML = `
-      h1, h2, h3, h4, h5, h6 { font-family: 'Instrument Serif', serif; margin-top: 1.5em; margin-bottom: 0.5em; color: #111; }
-      h1 { font-size: 2.5em; border-bottom: 2px solid #eee; padding-bottom: 0.3em; }
-      p { margin-bottom: 1em; line-height: 1.6; }
-      ul, ol { margin-bottom: 1em; padding-left: 2em; }
-      li { margin-bottom: 0.5em; }
-      code { font-family: 'DM Mono', monospace; background: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
-      pre { background: #f5f5f5; padding: 1em; border-radius: 5px; overflow-x: auto; margin-bottom: 1em; }
-      pre code { background: none; padding: 0; }
-      blockquote { border-left: 4px solid #ddd; padding-left: 1em; color: #666; margin: 1em 0; font-style: italic; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background-color: #f9f9f9; }
-      hr { border: 0; border-top: 1px solid #eee; margin: 2em 0; }
-    `;
-    clone.prepend(style);
 
-    const opt = {
-      margin: [15, 15, 15, 15],
-      filename: `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'document'}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    const docTitle = title || 'document';
+    const htmlContent = marked.parse(previewContent || '');
+
+    // Map font selection to web-safe equivalents for print
+    const fontMap = {
+      serif:   "'Georgia', 'Times New Roman', serif",
+      mono:    "'Courier New', Courier, monospace",
+      sans:    "Arial, Helvetica, sans-serif",
+      classic: "Georgia, serif",
+      modern:  "Arial, Helvetica, sans-serif",
+      elegant: "Georgia, 'Times New Roman', serif",
     };
+    const bodyFont = fontMap[fontFamily] || "Georgia, serif";
 
-    html2pdf().set(opt).from(clone).save().then(() => {
-      setExporting(false);
-      showToast('PDF Exported Successfully', 'success');
-    }).catch(() => {
-      setExporting(false);
-      showToast('Export failed', 'error');
-    });
+    const printHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${docTitle}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 18mm 20mm 18mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #1a1a1a;
+      font-family: ${bodyFont};
+      font-size: 13pt;
+      line-height: 1.75;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    h1 {
+      font-size: 24pt;
+      font-weight: normal;
+      color: #111111;
+      margin: 0 0 6pt 0;
+      padding-bottom: 8pt;
+      border-bottom: 1.5pt solid #cccccc;
+      line-height: 1.2;
+      page-break-after: avoid;
+    }
+    h2 {
+      font-size: 17pt;
+      font-weight: normal;
+      color: #111111;
+      margin: 20pt 0 6pt 0;
+      padding-bottom: 4pt;
+      border-bottom: 0.75pt solid #e0e0e0;
+      line-height: 1.3;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 13pt;
+      font-weight: bold;
+      color: #111111;
+      margin: 16pt 0 4pt 0;
+      page-break-after: avoid;
+    }
+    h4, h5, h6 {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #111111;
+      margin: 12pt 0 3pt 0;
+      page-break-after: avoid;
+    }
+    p {
+      margin: 0 0 9pt 0;
+      color: #1a1a1a;
+      orphans: 3;
+      widows: 3;
+    }
+    ul, ol {
+      margin: 0 0 9pt 0;
+      padding-left: 20pt;
+      color: #1a1a1a;
+    }
+    li {
+      margin-bottom: 3pt;
+      line-height: 1.65;
+    }
+    strong, b { font-weight: bold; }
+    em, i     { font-style: italic; }
+    a         { color: #3730a3; text-decoration: underline; }
+    code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 10pt;
+      background: #f3f4f6;
+      color: #15803d;
+      padding: 1pt 4pt;
+      border-radius: 2pt;
+      border: 0.5pt solid #d1d5db;
+    }
+    pre {
+      background: #f8f9fa;
+      border: 0.75pt solid #d1d5db;
+      border-left: 3pt solid #6366f1;
+      border-radius: 3pt;
+      padding: 10pt 12pt;
+      margin: 0 0 10pt 0;
+      page-break-inside: avoid;
+      overflow: hidden;
+    }
+    pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: #1e293b;
+      font-size: 10pt;
+      display: block;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    blockquote {
+      margin: 10pt 0;
+      padding: 6pt 0 6pt 14pt;
+      border-left: 3pt solid #6366f1;
+      background: #f5f5ff;
+      page-break-inside: avoid;
+    }
+    blockquote p {
+      margin: 0;
+      color: #374151;
+      font-style: italic;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 10pt 0;
+      font-size: 11pt;
+      page-break-inside: avoid;
+    }
+    th {
+      background: #e8edf2;
+      color: #111111;
+      font-weight: bold;
+      border: 0.75pt solid #9ca3af;
+      padding: 6pt 10pt;
+      text-align: left;
+    }
+    td {
+      border: 0.75pt solid #9ca3af;
+      padding: 5pt 10pt;
+      color: #1a1a1a;
+    }
+    tr:nth-child(even) td { background: #f9fafb; }
+    hr {
+      border: none;
+      border-top: 0.75pt solid #d1d5db;
+      margin: 16pt 0;
+    }
+    img { max-width: 100%; height: auto; }
+
+    /* Print-only: hide nothing, show everything cleanly */
+    @media print {
+      body { background: white !important; }
+      a { color: #3730a3 !important; }
+    }
+  </style>
+</head>
+<body>
+  ${htmlContent}
+  <script>
+    // Auto-trigger print dialog once content is loaded
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+        setTimeout(function() { window.close(); }, 1000);
+      }, 250);
+    };
+  <\/script>
+</body>
+</html>`;
+
+    // Open a clean new window — completely isolated from the app's dark CSS
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      showToast('Please allow popups for PDF export', 'error');
+      return;
+    }
+    printWindow.document.open();
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+
+    showToast('Print dialog opened — save as PDF', 'success');
   };
 
   // Preview Theme Styles
