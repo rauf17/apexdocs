@@ -272,7 +272,7 @@ export default function Landing() {
           <div className="flex gap-8">
             <div className="flex flex-col gap-3">
               <Link to="/templates" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Templates</Link>
-              <Link to="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">GitHub</Link>
+              <Link to="https://github.com/rauf17" className="text-sm text-text-secondary hover:text-text-primary transition-colors">GitHub</Link>
               <Link to="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Privacy</Link>
             </div>
           </div>
