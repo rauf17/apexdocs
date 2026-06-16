@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getDocuments, createDocument, toggleStar, deleteDocument } from '../lib/firestore';
 import { 
-  Settings, LogOut, Search, LayoutGrid, List, AlertCircle 
+  Settings, LogOut, Search, LayoutGrid, List, AlertCircle,
+  Plus, Star, Clock, FileText, LayoutTemplate
 } from 'lucide-react';
 import Logo from '../components/Logo';
 import DocumentCard from '../components/DocumentCard';
