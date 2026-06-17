@@ -569,7 +569,15 @@ export default function Landing() {
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-xs font-mono tracking-widest uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Company</p>
-              <Link to="#" className="text-sm transition-colors hover:text-accent" style={{ color: 'var(--text-secondary)' }}>GitHub</Link>
+               <Link
+    to="https://github.com/rauf17"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-sm transition-colors hover:text-accent"
+    style={{ color: 'var(--text-secondary)' }}
+  >
+    GitHub
+  </Link>
               <Link to="#" className="text-sm transition-colors hover:text-accent" style={{ color: 'var(--text-secondary)' }}>Privacy</Link>
             </div>
           </div>
