@@ -40,11 +40,27 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (!window.location.hash) {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
         <Suspense fallback={null}>
+          <ScrollToTop />
           <Routes>
             <Route path="/"            element={<Landing />} />
             <Route path="/login"       element={<Login />} />

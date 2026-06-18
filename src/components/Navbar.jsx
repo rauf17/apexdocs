@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Menu, X } from 'lucide-react';
 import Logo from './Logo';
@@ -10,6 +10,22 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleFeaturesClick = (e) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById('features');
+      if (el) {
+        window.lastScrollPosition = window.scrollY;
+        window.dispatchEvent(new CustomEvent('update-last-scroll'));
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate('/#features');
+    }
+    closeMenu();
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,7 +49,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8 text-sm font-medium">
           <Link to="/templates" className="text-text-secondary hover:text-text-primary transition-colors">Templates</Link>
           <Link to="/pricing" className="text-text-secondary hover:text-text-primary transition-colors">Pricing</Link>
-          <Link to="#" className="text-text-secondary hover:text-text-primary transition-colors">Features</Link>
+          <Link to="/#features" onClick={handleFeaturesClick} className="text-text-secondary hover:text-text-primary transition-colors">Features</Link>
           
           <div className="flex items-center gap-4 ml-4 pl-4 border-l border-border">
             {user ? (
@@ -77,6 +93,8 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-20 left-0 w-full bg-bg-card border-b border-border shadow-2xl flex flex-col p-6 gap-6">
           <Link to="/templates" className="text-base font-medium text-text-primary" onClick={closeMenu}>Templates</Link>
+          <Link to="/pricing" className="text-base font-medium text-text-primary" onClick={closeMenu}>Pricing</Link>
+          <Link to="/#features" onClick={handleFeaturesClick} className="text-base font-medium text-text-primary">Features</Link>
           {user ? (
             <>
               <Link to="/dashboard" className="text-base font-medium text-text-primary" onClick={closeMenu}>Dashboard</Link>

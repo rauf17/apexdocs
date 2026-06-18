@@ -143,6 +143,7 @@ const TABS = ['All', 'Writing', 'Export', 'Templates'];
 function FeaturesSection() {
   const [active, setActive] = useState('All');
   const [visible, setVisible] = useState(false);
+  const [showUndo, setShowUndo] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -154,12 +155,30 @@ function FeaturesSection() {
     return () => obs.disconnect();
   }, []);
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      if (typeof window.lastScrollPosition === 'number') {
+        setShowUndo(true);
+      }
+    };
+    window.addEventListener('update-last-scroll', handleUpdate);
+    return () => window.removeEventListener('update-last-scroll', handleUpdate);
+  }, []);
+
+  const handleUndoScroll = () => {
+    if (typeof window.lastScrollPosition === 'number') {
+      window.scrollTo({ top: window.lastScrollPosition, behavior: 'smooth' });
+      setShowUndo(false);
+      window.lastScrollPosition = undefined;
+    }
+  };
+
   const filtered = active === 'All'
     ? ALL_FEATURES
     : ALL_FEATURES.filter(f => f.category === active);
 
   return (
-    <section ref={ref} className="py-28 bg-bg-primary relative border-t border-border/50 overflow-hidden">
+    <section id="features" ref={ref} className="py-28 bg-bg-primary relative border-t border-border/50 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(212,168,67,0.04) 0%, transparent 70%)' }} />
@@ -233,6 +252,32 @@ function FeaturesSection() {
             </div>
           ))}
         </div>
+
+        {/* Undo Scroll Button */}
+        {showUndo && (
+          <div className="flex justify-center mt-12">
+            <button
+              onClick={handleUndoScroll}
+              className="px-6 py-3 rounded-xl border transition-all active:scale-95 flex items-center gap-2 shadow-lg"
+              style={{
+                borderColor: 'var(--border)',
+                background: 'var(--bg-card)',
+                color: 'var(--accent)',
+                boxShadow: '0 4px 20px rgba(212,168,67,0.1)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(212, 168, 67, 0.4)';
+                e.currentTarget.style.background = 'var(--bg-elevated)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border)';
+                e.currentTarget.style.background = 'var(--bg-card)';
+              }}
+            >
+              <span className="font-mono text-xs font-bold uppercase tracking-wider">← Undo Scroll (Go Back)</span>
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -245,6 +290,19 @@ export default function Landing() {
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
+    const checkHash = () => {
+      if (window.location.hash === '#features') {
+        setTimeout(() => {
+          const el = document.getElementById('features');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 200);
+      }
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+
     const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', onScroll, { passive: true });
 
@@ -264,6 +322,7 @@ export default function Landing() {
     document.querySelectorAll('.scroll-reveal').forEach(el => obs.observe(el));
 
     return () => {
+      window.removeEventListener('hashchange', checkHash);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('mousemove', onMouseMove);
       obs.disconnect();
