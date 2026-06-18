@@ -3,16 +3,25 @@ import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { Check, X, ChevronDown, Lock, Loader2, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Pricing() {
   const [yearly, setYearly] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState('idle'); // idle, loading, success
   const navigate = useNavigate();
+  const { user, updatePlan } = useAuth();
 
-  const handleCheckoutSubmit = (e) => {
+  const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
     setCheckoutStatus('loading');
+    try {
+      if (user) {
+        await updatePlan('pro');
+      }
+    } catch (err) {
+      console.error("Failed to upgrade user plan:", err);
+    }
     setTimeout(() => {
       setCheckoutStatus('success');
     }, 1500);
