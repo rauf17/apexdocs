@@ -48,7 +48,7 @@ const apexTheme = EditorView.theme({
 
 export default function Editor() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -253,6 +253,17 @@ export default function Editor() {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     triggerSave(content, title, true);
   }, [content, title]);
+
+  const handleFontSelect = (fontId) => {
+    const premiumFonts = ['classic', 'modern', 'elegant'];
+    const isPro = profile?.plan === 'pro';
+    if (premiumFonts.includes(fontId) && !isPro) {
+      showToast('Upgrade to Pro to unlock premium fonts!', 'info');
+      navigate('/pricing');
+      return;
+    }
+    setFontFamily(fontId);
+  };
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -534,6 +545,11 @@ export default function Editor() {
 </head>
 <body>
   ${htmlContent}
+  ${profile?.plan !== 'pro' ? `
+    <div style="text-align: center; font-size: 10pt; color: #888888; margin-top: 40pt; border-top: 0.5pt solid #eaeaea; padding-top: 12pt; font-family: sans-serif;">
+      Powered by <span style="font-weight: bold; color: #d4a843;">ApexDocs</span>
+    </div>
+  ` : ''}
   <script>
     // Auto-trigger print dialog once content is loaded
     window.onload = function() {
@@ -693,16 +709,24 @@ export default function Editor() {
                   { id: 'classic', label: 'Classic', font: "Georgia, serif" },
                   { id: 'modern',  label: 'Modern',  font: "'Plus Jakarta Sans', sans-serif" },
                   { id: 'elegant', label: 'Elegant', font: "'Cormorant Garamond', serif" }
-                ].map(f => (
-                  <button
-                    key={f.id}
-                    onClick={() => setFontFamily(f.id)}
-                    style={{ fontFamily: f.font }}
-                    className={`px-3 py-1.5 text-[13px] rounded text-left transition-all border ${fontFamily === f.id ? 'border-accent text-accent bg-accent/[0.05]' : 'border-border text-text-muted bg-bg-card hover:bg-bg-secondary hover:text-text-primary'}`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+                ].map(f => {
+                  const premiumFonts = ['classic', 'modern', 'elegant'];
+                  const isPremium = premiumFonts.includes(f.id);
+                  const isPro = profile?.plan === 'pro';
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => handleFontSelect(f.id)}
+                      style={{ fontFamily: f.font }}
+                      className={`relative px-3 py-1.5 text-[13px] rounded text-left transition-all border ${fontFamily === f.id ? 'border-accent text-accent bg-accent/[0.05]' : 'border-border text-text-muted bg-bg-card hover:bg-bg-secondary hover:text-text-primary'}`}
+                    >
+                      <span className="flex items-center justify-between gap-1 w-full">
+                        <span>{f.label}</span>
+                        {isPremium && !isPro && <span className="text-[10px]" title="Premium Font">👑</span>}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <hr className="border-border" />
@@ -737,7 +761,19 @@ export default function Editor() {
             {/* Versions */}
             <div>
               <label className="block font-mono text-[10px] text-text-muted uppercase tracking-wider mb-2">Versions</label>
-              {versions.length === 0 ? (
+              {profile?.plan !== 'pro' ? (
+                <div 
+                  onClick={() => {
+                    showToast('Upgrade to Pro to unlock version history!', 'info');
+                    navigate('/pricing');
+                  }}
+                  className="p-3 bg-bg-card border border-border/80 rounded-lg text-center cursor-pointer hover:border-accent/40 group transition-all"
+                >
+                  <span className="text-[12px] text-text-muted group-hover:text-accent font-sans flex items-center justify-center gap-1">
+                    🔒 Upgrade to unlock version history
+                  </span>
+                </div>
+              ) : versions.length === 0 ? (
                 <p className="text-[11px] font-mono text-text-muted">No versions saved yet.</p>
               ) : (
                 <div className="flex flex-col gap-1.5">
