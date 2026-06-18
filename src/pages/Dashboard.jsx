@@ -12,7 +12,7 @@ import SkeletonCard from '../components/SkeletonCard';
 import { useToast } from '../components/Toast';
 
 export default function Dashboard() {
-  const { user, logOut } = useAuth();
+  const { user, profile, logOut } = useAuth();
   const navigate = useNavigate();
 
   // State
@@ -51,6 +51,12 @@ export default function Dashboard() {
 
   // Actions
   const handleCreateNew = async () => {
+    const isPro = profile?.plan === 'pro';
+    if (!isPro && documents.length >= 3) {
+      showToast('Document limit reached. Upgrade to Pro for unlimited documents!', 'error');
+      navigate('/pricing');
+      return;
+    }
     try {
       const docId = await createDocument(user.uid, '', 'blank');
       navigate(`/editor/${docId}`);
@@ -90,6 +96,12 @@ export default function Dashboard() {
   };
 
   const handleDuplicate = async (doc) => {
+    const isPro = profile?.plan === 'pro';
+    if (!isPro && documents.length >= 3) {
+      showToast('Document limit reached. Upgrade to Pro for unlimited documents!', 'error');
+      navigate('/pricing');
+      return;
+    }
     const newName = `${doc.name || 'Untitled'} (Copy)`;
     const tempDoc = {
       id: 'temp-' + Date.now(),
@@ -242,7 +254,16 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 mb-6">
             <StatPill icon={<FileText className="w-3.5 h-3.5" />} text={`${documents.length} Documents`} />
             <StatPill icon={<Star className="w-3.5 h-3.5 text-[#f59e0b]" />} text={`${starredCount} Starred`} />
-            <StatPill icon={<span className="text-accent">✨</span>} text={<>Free Plan &middot; <Link to="/pricing" className="text-accent hover:underline ml-1">Upgrade &rarr;</Link></>} />
+            <StatPill 
+              icon={<span className="text-accent">✨</span>} 
+              text={
+                profile?.plan === 'pro' ? (
+                  <>Pro Plan</>
+                ) : (
+                  <>Free Plan ({documents.length}/3) &middot; <Link to="/pricing" className="text-accent hover:underline ml-1">Upgrade &rarr;</Link></>
+                )
+              } 
+            />
           </div>
 
           {/* FILTER TABS */}
