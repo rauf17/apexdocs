@@ -23,9 +23,9 @@ function ScrollBook() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const leftDeg  = -160 + openAngle * 160;
-  const rightDeg =  160 - openAngle * 160;
-  const opacity  = Math.min(1, openAngle * 1.5);
+  const leftDeg = -160 + openAngle * 160;
+  const rightDeg = 160 - openAngle * 160;
+  const opacity = Math.min(1, openAngle * 1.5);
 
   return (
     <div ref={sectionRef} className="relative flex items-center justify-center" style={{ height: '420px' }}>
@@ -117,7 +117,7 @@ function ScrollBook() {
       </div>
 
       <div
-        className="absolute bottom-2 left-1/2 -translate-x-1/2 font-mono text-xs tracking-widest uppercase"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 font-mono text-xs tracking-widest uppercase"
         style={{ color: `rgba(212,168,67,${Math.max(0.3, openAngle * 0.8)})`, transition: 'color 0.1s' }}
       >
         {openAngle < 0.3 ? 'Scroll to open' : openAngle < 0.7 ? 'Opening…' : 'Your story begins here'}
@@ -128,14 +128,14 @@ function ScrollBook() {
 
 // ─── Features ──────────────────────────────────────────────────────────────
 const ALL_FEATURES = [
-  { icon: <MonitorPlay className="w-5 h-5" />, title: 'Live Preview',        category: 'Writing',   desc: 'Real-time rendering as you type. What you see is exactly what you get in the final PDF.' },
-  { icon: <FileText    className="w-5 h-5" />, title: '10+ Templates',       category: 'Templates', desc: 'Start instantly with professional templates for resumes, invoices, proposals, and more.' },
-  { icon: <DownloadCloud className="w-5 h-5"/>, title: 'Instant Export',     category: 'Export',    desc: 'One click to generate a beautiful, print-ready PDF. Zero watermarks, ever.' },
-  { icon: <Palette     className="w-5 h-5" />, title: 'Multiple Themes',     category: 'Writing',   desc: 'Customize your writing environment with meticulously crafted syntax themes.' },
-  { icon: <Share2      className="w-5 h-5" />, title: 'Share Anywhere',      category: 'Export',    desc: 'Generate a public link instantly to share your document securely with anyone.' },
-  { icon: <SaveAll     className="w-5 h-5" />, title: 'Auto-Save',           category: 'Writing',   desc: 'Never lose a word. Your work is automatically saved to the cloud securely.' },
-  { icon: <Zap         className="w-5 h-5" />, title: 'Keyboard Shortcuts',  category: 'Writing',   desc: 'Power-user shortcuts for bold, italic, save, export and more — stay in flow.' },
-  { icon: <Lock        className="w-5 h-5" />, title: 'Secure & Private',    category: 'Export',    desc: 'Your documents are private by default. Share only when you choose to.' },
+  { icon: <MonitorPlay className="w-5 h-5" />, title: 'Live Preview', category: 'Writing', desc: 'Real-time rendering as you type. What you see is exactly what you get in the final PDF.' },
+  { icon: <FileText className="w-5 h-5" />, title: '10+ Templates', category: 'Templates', desc: 'Start instantly with professional templates for resumes, invoices, proposals, and more.' },
+  { icon: <DownloadCloud className="w-5 h-5" />, title: 'Instant Export', category: 'Export', desc: 'One click to generate a beautiful, print-ready PDF. Zero watermarks, ever.' },
+  { icon: <Palette className="w-5 h-5" />, title: 'Multiple Themes', category: 'Writing', desc: 'Customize your writing environment with meticulously crafted syntax themes.' },
+  { icon: <Share2 className="w-5 h-5" />, title: 'Share Anywhere', category: 'Export', desc: 'Generate a public link instantly to share your document securely with anyone.' },
+  { icon: <SaveAll className="w-5 h-5" />, title: 'Auto-Save', category: 'Writing', desc: 'Never lose a word. Your work is automatically saved to the cloud securely.' },
+  { icon: <Zap className="w-5 h-5" />, title: 'Keyboard Shortcuts', category: 'Writing', desc: 'Power-user shortcuts for bold, italic, save, export and more — stay in flow.' },
+  { icon: <Lock className="w-5 h-5" />, title: 'Secure & Private', category: 'Export', desc: 'Your documents are private by default. Share only when you choose to.' },
 ];
 
 const TABS = ['All', 'Writing', 'Export', 'Templates'];
@@ -186,9 +186,9 @@ function FeaturesSection() {
                 onClick={() => setActive(tab)}
                 className="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none"
                 style={{
-                  color:      active === tab ? '#0c0a08'              : 'var(--text-secondary)',
-                  background: active === tab ? 'var(--accent)'        : 'transparent',
-                  boxShadow:  active === tab ? '0 0 16px rgba(212,168,67,0.3)' : 'none',
+                  color: active === tab ? '#0c0a08' : 'var(--text-secondary)',
+                  background: active === tab ? 'var(--accent)' : 'transparent',
+                  boxShadow: active === tab ? '0 0 16px rgba(212,168,67,0.3)' : 'none',
                 }}
               >
                 {tab}
@@ -204,10 +204,10 @@ function FeaturesSection() {
               key={f.title}
               className="group relative rounded-2xl p-6 border border-border hover:border-yellow-600/40 cursor-default overflow-hidden"
               style={{
-                background:  'var(--bg-elevated)',
-                opacity:     visible ? 1 : 0,
-                transform:   visible ? 'translateY(0)' : 'translateY(24px)',
-                transition:  `opacity 0.5s ease ${i * 70}ms, transform 0.5s ease ${i * 70}ms, border-color 0.2s`,
+                background: 'var(--bg-elevated)',
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(24px)',
+                transition: `opacity 0.5s ease ${i * 70}ms, transform 0.5s ease ${i * 70}ms, border-color 0.2s`,
               }}
             >
               {/* Hover glow */}
@@ -240,8 +240,8 @@ function FeaturesSection() {
 
 // ─── Main Landing ────────────────────────────────────────────────────────────
 export default function Landing() {
-  const navigate  = useNavigate();
-  const heroRef   = useRef(null);
+  const navigate = useNavigate();
+  const heroRef = useRef(null);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -250,7 +250,7 @@ export default function Landing() {
 
     const onMouseMove = (e) => {
       document.querySelectorAll('.parallax-card').forEach(card => {
-        const xAxis = (window.innerWidth  / 2 - e.pageX) / 50;
+        const xAxis = (window.innerWidth / 2 - e.pageX) / 50;
         const yAxis = (window.innerHeight / 2 - e.pageY) / 50;
         card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
       });
@@ -384,8 +384,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-8 mt-20 relative">
             <div className="hidden md:block absolute top-8 left-[20%] right-[20%] h-px border-t border-dashed" style={{ borderColor: 'var(--border)' }} />
             {[
-              { n: '01', title: 'Write',  desc: 'Open the editor and write in plain Markdown. No formatting headaches — just focus on your words.' },
-              { n: '02', title: 'Style',  desc: 'Pick a template and theme. Watch the live preview update in real time as you type.' },
+              { n: '01', title: 'Write', desc: 'Open the editor and write in plain Markdown. No formatting headaches — just focus on your words.' },
+              { n: '02', title: 'Style', desc: 'Pick a template and theme. Watch the live preview update in real time as you type.' },
               { n: '03', title: 'Export', desc: 'Hit Export PDF. Your browser opens a beautiful, print-ready document in seconds.' },
             ].map((s, i) => (
               <div key={s.n} className="scroll-reveal relative z-10 flex flex-col items-center text-center" style={{ transitionDelay: `${i * 150}ms` }}>
@@ -459,10 +459,10 @@ export default function Landing() {
       <section className="py-16 border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { value: '10+',     label: 'Templates'    },
-            { value: '∞',       label: 'Free exports' },
-            { value: '0',       label: 'Watermarks'   },
-            { value: '1-click', label: 'PDF export'   },
+            { value: '10+', label: 'Templates' },
+            { value: '∞', label: 'Free exports' },
+            { value: '0', label: 'Watermarks' },
+            { value: '1-click', label: 'PDF export' },
           ].map((s, i) => (
             <div key={s.label} className="scroll-reveal text-center" style={{ transitionDelay: `${i * 100}ms` }}>
               <div className="font-serif text-4xl mb-1" style={{ color: 'var(--accent)' }}>{s.value}</div>
@@ -514,8 +514,8 @@ export default function Landing() {
             <div className="flex flex-col gap-3">
               <p className="text-xs font-mono tracking-widest uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Product</p>
               <Link to="/templates" className="text-sm transition-colors hover:text-accent" style={{ color: 'var(--text-secondary)' }}>Templates</Link>
-              <Link to="/pricing"   className="text-sm transition-colors hover:text-accent" style={{ color: 'var(--text-secondary)' }}>Pricing</Link>
-              <Link to="/editor"    className="text-sm transition-colors hover:text-accent" style={{ color: 'var(--text-secondary)' }}>Editor</Link>
+              <Link to="/pricing" className="text-sm transition-colors hover:text-accent" style={{ color: 'var(--text-secondary)' }}>Pricing</Link>
+              <Link to="/editor" className="text-sm transition-colors hover:text-accent" style={{ color: 'var(--text-secondary)' }}>Editor</Link>
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-xs font-mono tracking-widest uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Company</p>
@@ -593,7 +593,8 @@ export default function Landing() {
         </div>
       </dialog>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes floatY {
           0%,100% { transform: translateY(0); }
           50%      { transform: translateY(-16px); }
